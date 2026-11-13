@@ -688,7 +688,7 @@ internal fun ModernRowSection(
                     is ModernPayload.Catalog -> {
                         val url = item.imageUrl ?: return null
                         val metrics = item.catalogCardMetrics(
-                            rowUseLandscapePosters = rowUseLandscapePosters,
+                            useLandscapePosters = rowUseLandscapePosters,
                             portraitCardWidth = portraitCatalogCardWidth,
                             portraitCardHeight = portraitCatalogCardHeight,
                             landscapeCardWidth = landscapeCatalogCardWidth,
@@ -701,7 +701,7 @@ internal fun ModernRowSection(
                     is ModernPayload.CollectionFolder -> {
                         val url = item.imageUrl ?: return null
                         val metrics = item.catalogCardMetrics(
-                            rowUseLandscapePosters = rowUseLandscapePosters,
+                            useLandscapePosters = rowUseLandscapePosters,
                             portraitCardWidth = portraitCatalogCardWidth,
                             portraitCardHeight = portraitCatalogCardHeight,
                             landscapeCardWidth = landscapeCatalogCardWidth,
@@ -754,7 +754,7 @@ internal fun ModernRowSection(
                     val (wPx, hPx) = when (item.payload) {
                         is ModernPayload.Catalog -> {
                             val metrics = item.catalogCardMetrics(
-                                rowUseLandscapePosters = rowUseLandscapePosters,
+                                useLandscapePosters = rowUseLandscapePosters,
                                 portraitCardWidth = portraitCatalogCardWidth,
                                 portraitCardHeight = portraitCatalogCardHeight,
                                 landscapeCardWidth = landscapeCatalogCardWidth,
@@ -764,7 +764,7 @@ internal fun ModernRowSection(
                         }
                         is ModernPayload.CollectionFolder -> {
                             val metrics = item.catalogCardMetrics(
-                                rowUseLandscapePosters = rowUseLandscapePosters,
+                                useLandscapePosters = rowUseLandscapePosters,
                                 portraitCardWidth = portraitCatalogCardWidth,
                                 portraitCardHeight = portraitCatalogCardHeight,
                                 landscapeCardWidth = landscapeCatalogCardWidth,
@@ -790,7 +790,7 @@ internal fun ModernRowSection(
                             val (wPx, hPx) = when (item.payload) {
                                 is ModernPayload.Catalog -> {
                                     val metrics = item.catalogCardMetrics(
-                                        rowUseLandscapePosters = rowUseLandscapePosters,
+                                        useLandscapePosters = rowUseLandscapePosters,
                                         portraitCardWidth = portraitCatalogCardWidth,
                                         portraitCardHeight = portraitCatalogCardHeight,
                                         landscapeCardWidth = landscapeCatalogCardWidth,
@@ -800,7 +800,7 @@ internal fun ModernRowSection(
                                 }
                                 is ModernPayload.CollectionFolder -> {
                                     val metrics = item.catalogCardMetrics(
-                                        rowUseLandscapePosters = rowUseLandscapePosters,
+                                        useLandscapePosters = rowUseLandscapePosters,
                                         portraitCardWidth = portraitCatalogCardWidth,
                                         portraitCardHeight = portraitCatalogCardHeight,
                                         landscapeCardWidth = landscapeCatalogCardWidth,
@@ -1026,7 +1026,7 @@ internal fun ModernRowSection(
                                 payload = payload,
                                 requester = requester,
                                 isTargetItem = isTargetItem,
-                                rowUseLandscapePosters = rowUseLandscapePosters,
+                                useLandscapePosters = rowUseLandscapePosters,
                                 alwaysShowLandscapeClearlogo = alwaysShowLandscapeClearlogo,
                                 showLabels = showLabels,
                                 placeholderShimmerOffsetState = placeholderShimmerOffsetState,
