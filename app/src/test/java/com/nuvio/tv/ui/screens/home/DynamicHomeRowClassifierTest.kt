@@ -155,12 +155,17 @@ class DynamicHomeRowClassifierTest {
     @Test
     fun rankingWithFewerThanFiveItemsDoesNotConsumeNumberedSlot() {
         val result = DynamicHomeRowClassifier.classify(
-            listOf(catalog("Top 10 Movies", count = 4), catalog("Trending Series", count = 8))
+            listOf(
+                catalog("Movies"),
+                catalog("Top 10 Movies", count = 4),
+                catalog("Trending Series", count = 8)
+            )
         )
 
         assertEquals(
             listOf(
                 DynamicHomeRowStyle.FEATURED,
+                DynamicHomeRowStyle.PORTRAIT,
                 DynamicHomeRowStyle.TOP_10_NUMBERED
             ),
             result
