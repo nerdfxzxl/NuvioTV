@@ -705,9 +705,25 @@ private fun ModernHomeRoute(
                         DynamicHomeRowStyle.LANDSCAPE
                     else -> DynamicHomeRowClassifier.initialStyleForCatalog(row.title)
                 }
-                val manualStyle = uiState.dynamicHomeRowStyles[row.key]
-                    ?.let { name -> runCatching { DynamicHomeRowStyle.valueOf(name) }.getOrDefault(DynamicHomeRowStyle.AUTO) }
-                    ?: DynamicHomeRowStyle.AUTO
+                // Settings persist catalogue styles by addon + base URL + type + catalogue ID.
+                // Resolve with that same identity; row.key is a presentation key and is not stable
+                // across every home-row source.
+                val persistedCatalogKey = catalogPayload?.addonBaseUrl
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { baseUrl ->
+                        com.nuvio.tv.domain.model.catalogRowStableKey(
+                            addonId = row.addonId.orEmpty(),
+                            addonBaseUrl = baseUrl,
+                            type = row.apiType,
+                            catalogId = row.catalogId.orEmpty()
+                        )
+                    }
+                val manualStyle = (persistedCatalogKey?.let(uiState.dynamicHomeRowStyles::get)
+                    ?: uiState.dynamicHomeRowStyles[row.key])
+                    ?.let { name ->
+                        runCatching { DynamicHomeRowStyle.valueOf(name) }
+                            .getOrDefault(DynamicHomeRowStyle.AUTO)
+                    } ?: DynamicHomeRowStyle.AUTO
                 DynamicHomeRowInput(
                     key = row.key,
                     title = row.title,
