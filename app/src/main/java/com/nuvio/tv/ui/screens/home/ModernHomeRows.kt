@@ -436,6 +436,7 @@ private fun ModernCatalogRowItem(
 @Composable
 internal fun ModernRowSection(
     row: HeroCarouselRow,
+    dynamicRowStyle: String? = null,
     isActiveRow: () -> Boolean,
     rowFocusRequester: FocusRequester,
     isVerticalRowsScrollingState: State<Boolean>,
@@ -494,6 +495,11 @@ internal fun ModernRowSection(
     @Suppress("NAME_SHADOWING") val loadMoreRequestedTotals = loadMoreRequestedTotals.value
     @Suppress("NAME_SHADOWING") val itemFocusRequesters = itemFocusRequesters.value
     val rowKey = row.key
+    val rowUseLandscapePosters = when (dynamicRowStyle) {
+        "PORTRAIT" -> false
+        "LANDSCAPE" -> true
+        else -> useLandscapePosters
+    }
 
     // Per-row derived state: only invalidates when THIS row's focused index
     // changes, not when any other row's index changes in the shared map.
@@ -682,7 +688,7 @@ internal fun ModernRowSection(
                     is ModernPayload.Catalog -> {
                         val url = item.imageUrl ?: return null
                         val metrics = item.catalogCardMetrics(
-                            useLandscapePosters = useLandscapePosters,
+                            rowUseLandscapePosters = rowUseLandscapePosters,
                             portraitCardWidth = portraitCatalogCardWidth,
                             portraitCardHeight = portraitCatalogCardHeight,
                             landscapeCardWidth = landscapeCatalogCardWidth,
@@ -695,7 +701,7 @@ internal fun ModernRowSection(
                     is ModernPayload.CollectionFolder -> {
                         val url = item.imageUrl ?: return null
                         val metrics = item.catalogCardMetrics(
-                            useLandscapePosters = useLandscapePosters,
+                            rowUseLandscapePosters = rowUseLandscapePosters,
                             portraitCardWidth = portraitCatalogCardWidth,
                             portraitCardHeight = portraitCatalogCardHeight,
                             landscapeCardWidth = landscapeCatalogCardWidth,
@@ -748,7 +754,7 @@ internal fun ModernRowSection(
                     val (wPx, hPx) = when (item.payload) {
                         is ModernPayload.Catalog -> {
                             val metrics = item.catalogCardMetrics(
-                                useLandscapePosters = useLandscapePosters,
+                                rowUseLandscapePosters = rowUseLandscapePosters,
                                 portraitCardWidth = portraitCatalogCardWidth,
                                 portraitCardHeight = portraitCatalogCardHeight,
                                 landscapeCardWidth = landscapeCatalogCardWidth,
@@ -758,7 +764,7 @@ internal fun ModernRowSection(
                         }
                         is ModernPayload.CollectionFolder -> {
                             val metrics = item.catalogCardMetrics(
-                                useLandscapePosters = useLandscapePosters,
+                                rowUseLandscapePosters = rowUseLandscapePosters,
                                 portraitCardWidth = portraitCatalogCardWidth,
                                 portraitCardHeight = portraitCatalogCardHeight,
                                 landscapeCardWidth = landscapeCatalogCardWidth,
@@ -784,7 +790,7 @@ internal fun ModernRowSection(
                             val (wPx, hPx) = when (item.payload) {
                                 is ModernPayload.Catalog -> {
                                     val metrics = item.catalogCardMetrics(
-                                        useLandscapePosters = useLandscapePosters,
+                                        rowUseLandscapePosters = rowUseLandscapePosters,
                                         portraitCardWidth = portraitCatalogCardWidth,
                                         portraitCardHeight = portraitCatalogCardHeight,
                                         landscapeCardWidth = landscapeCatalogCardWidth,
@@ -794,7 +800,7 @@ internal fun ModernRowSection(
                                 }
                                 is ModernPayload.CollectionFolder -> {
                                     val metrics = item.catalogCardMetrics(
-                                        useLandscapePosters = useLandscapePosters,
+                                        rowUseLandscapePosters = rowUseLandscapePosters,
                                         portraitCardWidth = portraitCatalogCardWidth,
                                         portraitCardHeight = portraitCatalogCardHeight,
                                         landscapeCardWidth = landscapeCatalogCardWidth,
@@ -856,7 +862,7 @@ internal fun ModernRowSection(
         // When a poster in this row expands, ensure it scrolls fully into view.
         var isExpansionScrollActive by remember { mutableStateOf(false) }
         val expandedCardWidthPx = with(density) {
-            if (useLandscapePosters) {
+            if (rowUseLandscapePosters) {
                 landscapeCatalogCardWidth.roundToPx()
             } else {
                 (portraitCatalogCardHeight * (16f / 9f)).roundToPx()
@@ -1020,7 +1026,7 @@ internal fun ModernRowSection(
                                 payload = payload,
                                 requester = requester,
                                 isTargetItem = isTargetItem,
-                                useLandscapePosters = useLandscapePosters,
+                                rowUseLandscapePosters = rowUseLandscapePosters,
                                 alwaysShowLandscapeClearlogo = alwaysShowLandscapeClearlogo,
                                 showLabels = showLabels,
                                 placeholderShimmerOffsetState = placeholderShimmerOffsetState,
