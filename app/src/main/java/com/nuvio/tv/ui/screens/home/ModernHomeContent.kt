@@ -146,7 +146,8 @@ fun ModernHomeContent(
     onRequestLazyCatalogLoad: (String) -> Unit = {},
     onRowItemFocusedCallback: (String, Int, Boolean) -> Unit = { _, _, _ -> },
     blockLeftOnFirstExpandedItem: Boolean = false,
-    dynamicRowStyles: Map<String, String> = emptyMap()
+    dynamicRowStyles: Map<String, String> = emptyMap(),
+    dynamicHomeMode: Boolean = false
 ) {
     val onRowItemFocusedPassedDown = rememberUpdatedState(onRowItemFocusedCallback)
     val defaultBringIntoViewSpec = LocalBringIntoViewSpec.current
@@ -155,7 +156,7 @@ fun ModernHomeContent(
     val lifecycleOwner = LocalLifecycleOwner.current
     val useLandscapePosters = uiState.modernLandscapePostersEnabled
     val alwaysShowLandscapeClearlogo = uiState.alwaysShowLandscapeClearlogo
-    val fullScreenBackdrop = uiState.modernHeroFullScreenBackdropEnabled
+    val fullScreenBackdrop = dynamicHomeMode || uiState.modernHeroFullScreenBackdropEnabled
     val trailerPlaybackTarget = uiState.focusedPosterBackdropTrailerPlaybackTarget
     val effectiveAutoplayEnabled =
         uiState.focusedPosterBackdropTrailerEnabled &&
@@ -1041,8 +1042,14 @@ fun ModernHomeContent(
             }
 
             val localDensity = LocalDensity.current
-            val rowsViewportHeightFraction = if (useLandscapePosters) 0.49f else 0.52f
+            val rowsViewportHeightFraction = when {
+                dynamicHomeMode -> 1f
+                useLandscapePosters -> 0.49f
+                else -> 0.52f
+            }
             val rowsViewportHeight = remember(screenHeight, rowsViewportHeightFraction) { screenHeight * rowsViewportHeightFraction }
+            val dynamicRowGap = remember(screenHeight) { screenHeight * (32f / 1080f) }
+            val dynamicBottomPadding = remember(screenHeight) { screenHeight * (96f / 1080f) }
             val rowTitleLineHeight = MaterialTheme.typography.titleMedium.lineHeight
             val rowTitleHeight = remember(rowTitleLineHeight, localDensity) {
                 with(localDensity) {
@@ -1050,18 +1057,33 @@ fun ModernHomeContent(
                         .getOrDefault(NuvioTheme.spacing.xl)
                 }
             }
-            val heroBackdropHeight = remember(screenHeight, rowsViewportHeight, rowTitleHeight) { (screenHeight - rowsViewportHeight + rowTitleHeight + 14.dp).coerceAtMost(screenHeight) }
-            val verticalRowBringIntoViewSpec = remember(localDensity, defaultBringIntoViewSpec) {
-                val topInsetPx = with(localDensity) { MODERN_ROW_HEADER_FOCUS_INSET.toPx() }
+            val heroBackdropHeight = remember(screenHeight, rowsViewportHeight, rowTitleHeight, dynamicHomeMode) {
+                if (dynamicHomeMode) screenHeight
+                else (screenHeight - rowsViewportHeight + rowTitleHeight + 14.dp).coerceAtMost(screenHeight)
+            }
+            val verticalRowBringIntoViewSpec = remember(localDensity, defaultBringIntoViewSpec, dynamicHomeMode) {
                 @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-                object : BringIntoViewSpec {
-                    override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
-                    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
-                        val currentLeadingEdge = offset
-                        if (abs(currentLeadingEdge - topInsetPx) < 1f) return 0f
-                        val distance = currentLeadingEdge - topInsetPx
-                        if (distance < 0f && !verticalRowListState.canScrollBackward) return 0f
-                        return distance
+                if (dynamicHomeMode) {
+                    object : BringIntoViewSpec {
+                        override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
+                        override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+                            val centeredLeadingEdge = (containerSize - size) * 0.5f
+                            val distance = offset - centeredLeadingEdge
+                            if (distance < 0f && !verticalRowListState.canScrollBackward) return 0f
+                            return distance
+                        }
+                    }
+                } else {
+                    val topInsetPx = with(localDensity) { MODERN_ROW_HEADER_FOCUS_INSET.toPx() }
+                    object : BringIntoViewSpec {
+                        override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
+                        override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+                            val currentLeadingEdge = offset
+                            if (abs(currentLeadingEdge - topInsetPx) < 1f) return 0f
+                            val distance = currentLeadingEdge - topInsetPx
+                            if (distance < 0f && !verticalRowListState.canScrollBackward) return 0f
+                            return distance
+                        }
                     }
                 }
             }
@@ -1272,6 +1294,9 @@ fun ModernHomeContent(
                 onExpansionInteractionNonceChange = onExpansionInteractionNonceChangeLambda,
                 blockLeftOnFirstExpandedItem = blockLeftOnFirstExpandedItem,
                 dynamicRowStyles = dynamicRowStyles,
+                dynamicHomeMode = dynamicHomeMode,
+                dynamicRowGap = dynamicRowGap,
+                dynamicBottomPadding = dynamicBottomPadding,
                 isVerticalRowsScrollingState = isVerticalRowsScrollingState,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
