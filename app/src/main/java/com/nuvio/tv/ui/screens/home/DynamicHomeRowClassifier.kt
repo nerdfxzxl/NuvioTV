@@ -68,8 +68,9 @@ internal object DynamicHomeRowClassifier {
      * Mirrors Legacy's dinAtribuirTipos ordering:
      * - manually selected styles are never overwritten;
      * - only native portrait/catalog rows enter automatic classification;
+     * - the first eligible addon catalogue becomes the 16:9 featured row;
      * - Continue Watching and Upcoming do not advance the portrait/landscape cycle;
-     * - the first eligible ranking (5+ items) gets numbered Top 10;
+     * - the first eligible ranking (5+ items) after the feature gets numbered Top 10;
      * - later recognised rankings stay portrait and advance the cycle;
      * - ordinary rows alternate portrait, landscape, starting with portrait.
      */
@@ -107,10 +108,10 @@ internal object DynamicHomeRowClassifier {
             // A manual style still wins, but the showcase slot remains consumed.
             if (!featuredAssigned && isCatalog) {
                 featuredAssigned = true
-                return@map if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
-                    row.manualStyle
-                } else {
-                    DynamicHomeRowStyle.FEATURED
+                return@map when {
+                    row.manualStyle != DynamicHomeRowStyle.AUTO -> row.manualStyle
+                    row.initialStyle == DynamicHomeRowStyle.LANDSCAPE -> DynamicHomeRowStyle.LANDSCAPE
+                    else -> DynamicHomeRowStyle.FEATURED
                 }
             }
 
