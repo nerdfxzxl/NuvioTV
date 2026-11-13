@@ -13,6 +13,7 @@ class DynamicHomeRowClassifierTest {
         key = key,
         title = title,
         catalogId = title,
+        hasAddonBaseUrl = true,
         hasCatalogIdentity = true,
         itemCount = count,
         manualStyle = manual
@@ -77,6 +78,27 @@ class DynamicHomeRowClassifierTest {
                 DynamicHomeRowStyle.TOP_10_NUMBERED,
                 DynamicHomeRowStyle.LANDSCAPE
             ),
+            result
+        )
+    }
+
+    @Test
+    fun rankingWithoutAddonBaseUrlDoesNotGetNumberedTreatment() {
+        val result = DynamicHomeRowClassifier.classify(
+            listOf(
+                DynamicHomeRowInput(
+                    key = "top_movies",
+                    title = "Top Movies",
+                    catalogId = "top_movies",
+                    hasCatalogIdentity = true,
+                    itemCount = 8
+                ),
+                catalog("Series")
+            )
+        )
+
+        assertEquals(
+            listOf(DynamicHomeRowStyle.PORTRAIT, DynamicHomeRowStyle.LANDSCAPE),
             result
         )
     }
@@ -189,6 +211,7 @@ private object DynamicHomeRowRowClassifierTestHelper {
                     key = "addon_movie_top",
                     title = "Movies",
                     catalogId = "catalog_top",
+                    hasAddonBaseUrl = true,
                     itemCount = 12,
                     initialStyle = DynamicHomeRowStyle.TOP_10_STACKED
                 ),
@@ -196,6 +219,7 @@ private object DynamicHomeRowRowClassifierTestHelper {
                     key = "addon_series_top",
                     title = "Series",
                     catalogId = "catalog_series",
+                    hasAddonBaseUrl = true,
                     itemCount = 12,
                     initialStyle = DynamicHomeRowStyle.TOP_10_STACKED
                 ),
@@ -203,6 +227,7 @@ private object DynamicHomeRowRowClassifierTestHelper {
                     key = "addon_documentaries",
                     title = "Documentaries",
                     catalogId = "documentaries",
+                    hasAddonBaseUrl = true,
                     itemCount = 12
                 )
             )
