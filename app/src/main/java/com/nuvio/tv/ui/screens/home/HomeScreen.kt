@@ -714,7 +714,7 @@ private fun ModernHomeRoute(
                         com.nuvio.tv.domain.model.catalogRowStableKey(
                             addonId = row.addonId.orEmpty(),
                             addonBaseUrl = baseUrl,
-                            type = row.apiType,
+                            type = row.apiType.orEmpty(),
                             catalogId = row.catalogId.orEmpty()
                         )
                     }
