@@ -9,10 +9,17 @@ import java.util.Locale
  */
 internal enum class DynamicHomeRowStyle {
     AUTO,
+    CONTINUE_WATCHING,
     PORTRAIT,
+    POSTER,
     LANDSCAPE,
+    FEATURED,
+    FEATURED_SQUARE,
     COLLECTION,
     SERVICE,
+    SOCIAL,
+    RETURN,
+    CATALOG_SHORTCUTS,
     TOP_10_STACKED,
     TOP_10_NUMBERED,
     LARGE_4_3,
@@ -38,6 +45,7 @@ internal data class DynamicHomeRowInput(
     val key: String,
     val title: String,
     val catalogId: String? = null,
+    val hasAddonBaseUrl: Boolean = false,
     val hasCatalogIdentity: Boolean = catalogId != null,
     val itemCount: Int,
     val initialStyle: DynamicHomeRowStyle = DynamicHomeRowStyle.PORTRAIT,
@@ -70,19 +78,20 @@ internal object DynamicHomeRowClassifier {
         var alternatingRows = 0
 
         return rows.map { row ->
-            if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
-                return@map row.manualStyle
-            }
-
             if (row.itemCount < 1) {
                 return@map row.initialStyle
+            }
+
+            if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
+                return@map row.manualStyle
             }
 
             if (row.key == CONTINUE_WATCHING_KEY || row.key == UPCOMING_KEY) {
                 return@map row.initialStyle
             }
 
-            val isCatalog = row.hasCatalogIdentity &&
+            val isCatalog = row.hasAddonBaseUrl &&
+                row.hasCatalogIdentity &&
                 !row.catalogId.isNullOrBlank()
 
             if (row.initialStyle == DynamicHomeRowStyle.TOP_10_STACKED && isCatalog) {
