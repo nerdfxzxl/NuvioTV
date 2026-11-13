@@ -119,7 +119,7 @@ fun HomeScreen(
     val hasCollectionContent = uiState.homeRows.any { it is HomeRow.CollectionRow }
     val hasHeroContent = uiState.heroItems.isNotEmpty()
     val modernPresentationReady =
-        uiState.homeLayout != HomeLayout.MODERN ||
+        (uiState.homeLayout != HomeLayout.MODERN && uiState.homeLayout != HomeLayout.DYNAMIC) ||
             modernPresentation.rows.list.isNotEmpty() ||
             (uiState.heroSectionEnabled && hasHeroContent && !hasCatalogContent && !hasCollectionContent)
     var showHomeContentWithAnimation by rememberSaveable { mutableStateOf(false) }
@@ -131,7 +131,7 @@ fun HomeScreen(
     var posterOptionsTarget by remember { mutableStateOf<HomePosterOptionsTarget?>(null) }
 
     LaunchedEffect(uiState.homeLayout) {
-        if (uiState.homeLayout != HomeLayout.MODERN) {
+        if (uiState.homeLayout != HomeLayout.MODERN && uiState.homeLayout != HomeLayout.DYNAMIC) {
             HeroBackdropState.update(null)
         }
     }
@@ -404,6 +404,19 @@ fun HomeScreen(
                                 isCatalogItemWatched = isCatalogItemWatched,
                                 onCatalogItemLongPress = onCatalogItemLongPress
                             )
+
+                            HomeLayout.DYNAMIC -> DynamicHomeRoute(
+                                viewModel = viewModel,
+                                uiState = uiState,
+                                onNavigateToDetail = onNavigateToDetailStable,
+                                onContinueWatchingClick = onContinueWatchingClickStable,
+                                onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginningStable,
+                                onContinueWatchingPlayManually = onContinueWatchingPlayManuallyStable,
+                                showContinueWatchingManualPlayOption = effectiveAutoplayEnabled,
+                                onNavigateToFolderDetail = onNavigateToFolderDetailStable,
+                                isCatalogItemWatched = isCatalogItemWatched,
+                                onCatalogItemLongPress = onCatalogItemLongPress
+                            )
                         }
                     }
                 }
@@ -630,6 +643,7 @@ private fun GridHomeRoute(
 private fun ModernHomeRoute(
     viewModel: HomeViewModel,
     uiState: HomeUiState,
+    dynamicMode: Boolean = false,
     onNavigateToDetail: (String, String, String) -> Unit,
     onContinueWatchingClick: (ContinueWatchingItem) -> Unit,
     onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit,
@@ -674,9 +688,43 @@ private fun ModernHomeRoute(
             viewModel.preloadAdjacentItem(item)
         }
     }
+    val dynamicRowStyles = remember(modernPresentation.rows, uiState.dynamicHomeRowStyles, dynamicMode) {
+        if (!dynamicMode) {
+            emptyMap()
+        } else {
+            val rowInputs = modernPresentation.rows.list.map { row ->
+                val firstPayload = row.items.list.firstOrNull()?.payload
+                val catalogPayload = firstPayload as? ModernPayload.Catalog
+                val initialStyle = when {
+                    row.key == MODERN_CONTINUE_WATCHING_ROW_KEY ||
+                        row.key == MODERN_UPCOMING_ROW_KEY -> DynamicHomeRowStyle.CONTINUE_WATCHING
+                    firstPayload is ModernPayload.CollectionFolder -> DynamicHomeRowStyle.COLLECTION
+                    else -> DynamicHomeRowStyle.PORTRAIT
+                }
+                val manualStyle = uiState.dynamicHomeRowStyles[row.key]
+                    ?.let { name -> runCatching { DynamicHomeRowStyle.valueOf(name) }.getOrDefault(DynamicHomeRowStyle.AUTO) }
+                    ?: DynamicHomeRowStyle.AUTO
+                DynamicHomeRowInput(
+                    key = row.key,
+                    title = row.title,
+                    catalogId = row.catalogId,
+                    hasAddonBaseUrl = !catalogPayload?.addonBaseUrl.isNullOrBlank(),
+                    hasCatalogIdentity = !row.catalogId.isNullOrBlank() && !row.addonId.isNullOrBlank(),
+                    itemCount = row.items.list.size,
+                    initialStyle = initialStyle,
+                    manualStyle = manualStyle
+                )
+            }
+            DynamicHomeRowClassifier.classify(rowInputs)
+                .mapIndexed { index, style -> modernPresentation.rows.list[index].key to style.name }
+                .toMap()
+        }
+    }
+
     ModernHomeContent(
         uiState = uiState,
         modernPresentation = modernPresentation,
+        dynamicRowStyles = dynamicRowStyles,
         focusState = focusState,
         scrollToTopTrigger = scrollToTopTrigger,
         enrichingItemId = enrichingItemId,
@@ -709,6 +757,34 @@ private fun ModernHomeRoute(
         onRequestLazyCatalogLoad = remember(viewModel) {
             { catalogKey: String -> viewModel.requestLazyCatalogLoad(catalogKey) }
         }
+    )
+}
+
+@Composable
+private fun DynamicHomeRoute(
+    viewModel: HomeViewModel,
+    uiState: HomeUiState,
+    onNavigateToDetail: (String, String, String) -> Unit,
+    onContinueWatchingClick: (ContinueWatchingItem) -> Unit,
+    onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit,
+    onContinueWatchingPlayManually: (ContinueWatchingItem) -> Unit,
+    showContinueWatchingManualPlayOption: Boolean,
+    onNavigateToFolderDetail: (String, String) -> Unit = { _, _ -> },
+    isCatalogItemWatched: (MetaPreview) -> Boolean,
+    onCatalogItemLongPress: (MetaPreview, String) -> Unit
+) {
+    ModernHomeRoute(
+        viewModel = viewModel,
+        uiState = uiState,
+        dynamicMode = true,
+        onNavigateToDetail = onNavigateToDetail,
+        onContinueWatchingClick = onContinueWatchingClick,
+        onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginning,
+        onContinueWatchingPlayManually = onContinueWatchingPlayManually,
+        showContinueWatchingManualPlayOption = showContinueWatchingManualPlayOption,
+        onNavigateToFolderDetail = onNavigateToFolderDetail,
+        isCatalogItemWatched = isCatalogItemWatched,
+        onCatalogItemLongPress = onCatalogItemLongPress
     )
 }
 
