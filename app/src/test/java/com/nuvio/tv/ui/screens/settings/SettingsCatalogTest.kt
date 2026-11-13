@@ -75,7 +75,7 @@ class SettingsCatalogTest {
 
         assertFalse(SettingsCategory.ACCOUNT in categories)
         assertFalse(SettingsCategory.PROFILES in categories)
-        assertEquals(SettingsCategory.APPEARANCE, categories.first())
+        assertEquals(SettingsCategory.NERD_FAZAL, categories.first())
     }
 
     @Test
@@ -152,7 +152,7 @@ class SettingsCatalogTest {
         }
         assertEquals(
             listOf(SettingsCategory.PROFILES, SettingsCategory.NERD_FAZAL, SettingsCategory.ACCOUNT, SettingsCategory.WATCH_PARTY),
-            visibleSettingsCategories(true, isEssentialMode = false, isDebugBuild = false, isWatchPartyAvailable = true).take(3)
+            visibleSettingsCategories(true, isEssentialMode = false, isDebugBuild = false, isWatchPartyAvailable = true).take(4)
         )
     }
 
