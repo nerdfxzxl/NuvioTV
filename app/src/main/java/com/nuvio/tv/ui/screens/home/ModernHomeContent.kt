@@ -1079,6 +1079,41 @@ fun ModernHomeContent(
             val dynamicRowGap = remember(screenHeight) { screenHeight * (32f / 1080f) }
             val dynamicTopPadding = remember(screenHeight) { screenHeight * (980f / 1080f) }
             val dynamicBottomPadding = remember(screenHeight) { screenHeight * (96f / 1080f) }
+            val dynamicHeroFadeStart = remember(screenHeight) { screenHeight * (80f / 1080f) }
+            val dynamicHeroFadeEnd = remember(screenHeight) { screenHeight * (560f / 1080f) }
+            val dynamicHeroFadeProgress = remember(
+                verticalRowListState,
+                dynamicTopPadding,
+                dynamicHeroFadeStart,
+                dynamicHeroFadeEnd,
+                localDensity,
+                dynamicHomeMode
+            ) {
+                derivedStateOf {
+                    if (!dynamicHomeMode) {
+                        1f
+                    } else {
+                        val firstVisibleItem = verticalRowListState.layoutInfo.visibleItemsInfo.firstOrNull()
+                        val scrollDistance = firstVisibleItem?.let { item ->
+                            with(localDensity) { dynamicTopPadding.toPx() } - item.offset
+                        } ?: 0f
+                        val fadeStartPx = with(localDensity) { dynamicHeroFadeStart.toPx() }
+                        val fadeEndPx = with(localDensity) { dynamicHeroFadeEnd.toPx() }
+                        1f - ((scrollDistance - fadeStartPx) / (fadeEndPx - fadeStartPx))
+                            .coerceIn(0f, 1f)
+                    }
+                }
+            }
+            val dynamicHeroFadeAlpha by animateFloatAsState(
+                targetValue = dynamicHeroFadeProgress.value,
+                animationSpec = tween(durationMillis = 180),
+                label = "dynamicHeroArtworkFade"
+            )
+            val heroMetadataBottomPadding = if (dynamicHomeMode) {
+                screenHeight * (120f / 1080f)
+            } else {
+                rowsViewportHeight
+            }
             val rowTitleLineHeight = MaterialTheme.typography.titleMedium.lineHeight
             val rowTitleHeight = remember(rowTitleLineHeight, localDensity) {
                 with(localDensity) {
@@ -1131,11 +1166,25 @@ fun ModernHomeContent(
                 }.coerceAtLeast(1)
             }
 
-            val heroMediaModifier = remember(heroBackdropHeight, screenHeight, fullScreenBackdrop) {
+            val heroMediaModifier = remember(
+                heroBackdropHeight,
+                screenHeight,
+                fullScreenBackdrop,
+                dynamicHeroFadeAlpha
+            ) {
+                val artworkAlpha = if (dynamicHomeMode) dynamicHeroFadeAlpha else 1f
                 if (fullScreenBackdrop) {
-                    Modifier.align(Alignment.TopStart).fillMaxWidth().height(screenHeight)
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .height(screenHeight)
+                        .graphicsLayer { alpha = artworkAlpha }
                 } else {
-                    Modifier.align(Alignment.TopEnd).offset(x = NuvioTheme.spacing.huge).fillMaxWidth(MODERN_HERO_MEDIA_WIDTH_FRACTION).height(heroBackdropHeight)
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = NuvioTheme.spacing.huge)
+                        .fillMaxWidth(MODERN_HERO_MEDIA_WIDTH_FRACTION)
+                        .height(heroBackdropHeight)
                 }
             }
 
@@ -1179,7 +1228,7 @@ fun ModernHomeContent(
             val heroMetadataModifier = remember(rowHorizontalPadding, rowsViewportHeight) {
                 Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = rowHorizontalPadding, end = NuvioTheme.spacing.xxxl, bottom = NuvioTheme.spacing.none + rowsViewportHeight + NuvioTheme.spacing.lg)
+                    .padding(start = rowHorizontalPadding, end = NuvioTheme.spacing.xxxl, bottom = NuvioTheme.spacing.none + heroMetadataBottomPadding + NuvioTheme.spacing.lg)
                     .fillMaxWidth(MODERN_HERO_TEXT_WIDTH_FRACTION)
             }
 
