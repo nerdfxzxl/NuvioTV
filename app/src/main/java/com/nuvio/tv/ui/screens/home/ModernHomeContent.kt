@@ -145,16 +145,22 @@ fun ModernHomeContent(
     scrollToTopTrigger: Int = 0,
     onRequestLazyCatalogLoad: (String) -> Unit = {},
     onRowItemFocusedCallback: (String, Int, Boolean) -> Unit = { _, _, _ -> },
-    blockLeftOnFirstExpandedItem: Boolean = false
+    blockLeftOnFirstExpandedItem: Boolean = false,
+    dynamicRowStyles: Map<String, String> = emptyMap(),
+    dynamicHomeMode: Boolean = false
 ) {
     val onRowItemFocusedPassedDown = rememberUpdatedState(onRowItemFocusedCallback)
     val defaultBringIntoViewSpec = LocalBringIntoViewSpec.current
     val sidebarExpanded = LocalSidebarExpanded.current
     val isSidebarExpanded = remember(sidebarExpanded) { derivedStateOf { sidebarExpanded } }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val useLandscapePosters = uiState.modernLandscapePostersEnabled
-    val alwaysShowLandscapeClearlogo = uiState.alwaysShowLandscapeClearlogo
-    val fullScreenBackdrop = uiState.modernHeroFullScreenBackdropEnabled
+    val useLandscapePosters = if (dynamicHomeMode) false else uiState.modernLandscapePostersEnabled
+    val alwaysShowLandscapeClearlogo = !dynamicHomeMode && uiState.alwaysShowLandscapeClearlogo
+    val fullScreenBackdrop = if (dynamicHomeMode) {
+        uiState.heroSectionEnabled
+    } else {
+        uiState.modernHeroFullScreenBackdropEnabled
+    }
     val trailerPlaybackTarget = uiState.focusedPosterBackdropTrailerPlaybackTarget
     val effectiveAutoplayEnabled =
         uiState.focusedPosterBackdropTrailerEnabled &&
@@ -678,32 +684,60 @@ fun ModernHomeContent(
         }
     }
 
+    val localConfiguration = LocalConfiguration.current
+    val screenWidth = localConfiguration.screenWidthDp.dp
+    val screenHeight = localConfiguration.screenHeightDp.dp
     val portraitBaseWidth = uiState.posterCardWidthDp.dp
     val portraitBaseHeight = uiState.posterCardHeightDp.dp
     val portraitModernPosterScale = 1.08f
     val landscapeModernPosterScale = 1.34f
-    val portraitCatalogCardWidth = portraitBaseWidth * 0.84f * portraitModernPosterScale
-    val portraitCatalogCardHeight = portraitBaseHeight * 0.84f * portraitModernPosterScale
-    val landscapeCatalogCardWidth = portraitBaseWidth * 1.24f * landscapeModernPosterScale
-    val landscapeCatalogCardHeight = landscapeCatalogCardWidth / 1.77f
-    // Poster style reuses the portrait catalog dimensions so its artwork matches the catalogs below it.
-    val continueWatchingStyle = uiState.continueWatchingCardStyle
+    // Legacy Dynamic dimensions are measured at 1920x1080. Scaling each axis
+    // independently keeps the reference geometry stable across TV densities.
+    val dynamicPortraitCardWidth = screenWidth * (212f / 1920f)
+    val dynamicPortraitCardHeight = screenHeight * (322f / 1080f)
+    val dynamicLandscapeCardWidth = screenWidth * (384f / 1920f)
+    val dynamicLandscapeCardHeight = screenHeight * (216f / 1080f)
+    val portraitCatalogCardWidth = if (dynamicHomeMode) {
+        dynamicPortraitCardWidth
+    } else {
+        portraitBaseWidth * 0.84f * portraitModernPosterScale
+    }
+    val portraitCatalogCardHeight = if (dynamicHomeMode) {
+        dynamicPortraitCardHeight
+    } else {
+        portraitBaseHeight * 0.84f * portraitModernPosterScale
+    }
+    val landscapeCatalogCardWidth = if (dynamicHomeMode) {
+        dynamicLandscapeCardWidth
+    } else {
+        portraitBaseWidth * 1.24f * landscapeModernPosterScale
+    }
+    val landscapeCatalogCardHeight = if (dynamicHomeMode) {
+        dynamicLandscapeCardHeight
+    } else {
+        landscapeCatalogCardWidth / 1.77f
+    }
+    // Legacy Continue Watching uses a dedicated 419x236 card.
+    val continueWatchingStyle = if (dynamicHomeMode) {
+        ContinueWatchingCardStyle.CARD
+    } else {
+        uiState.continueWatchingCardStyle
+    }
     val continueWatchingScale = 1.34f
-    val continueWatchingCardWidth = when (continueWatchingStyle) {
+    val continueWatchingCardWidth = if (dynamicHomeMode) {
+        screenWidth * (419f / 1920f)
+    } else when (continueWatchingStyle) {
         ContinueWatchingCardStyle.POSTER -> portraitCatalogCardWidth
-        // Wide still scales with the poster width setting so it matches the rest of the row.
         ContinueWatchingCardStyle.WIDE -> portraitBaseWidth * 2.1f
         ContinueWatchingCardStyle.CARD -> portraitBaseWidth * 1.24f * continueWatchingScale
     }
-    val continueWatchingCardHeight = when (continueWatchingStyle) {
+    val continueWatchingCardHeight = if (dynamicHomeMode) {
+        screenHeight * (236f / 1080f)
+    } else when (continueWatchingStyle) {
         ContinueWatchingCardStyle.POSTER -> portraitCatalogCardHeight
         ContinueWatchingCardStyle.WIDE -> continueWatchingCardWidth * WIDE_CARD_HEIGHT_RATIO
         ContinueWatchingCardStyle.CARD -> continueWatchingCardWidth / 1.77f
     }
-
-    val localConfiguration = LocalConfiguration.current
-    val screenWidth = localConfiguration.screenWidthDp.dp
-    val screenHeight = localConfiguration.screenHeightDp.dp
 
     Box(modifier = Modifier.fillMaxSize().background(NuvioTheme.colors.Background)) {
             val posterCardCornerRadius = remember(uiState.posterCardCornerRadiusDp) { uiState.posterCardCornerRadiusDp.dp }
@@ -1040,8 +1074,58 @@ fun ModernHomeContent(
             }
 
             val localDensity = LocalDensity.current
-            val rowsViewportHeightFraction = if (useLandscapePosters) 0.49f else 0.52f
+            val rowsViewportHeightFraction = when {
+                dynamicHomeMode -> 1f
+                useLandscapePosters -> 0.49f
+                else -> 0.52f
+            }
             val rowsViewportHeight = remember(screenHeight, rowsViewportHeightFraction) { screenHeight * rowsViewportHeightFraction }
+            val dynamicRowGap = remember(screenHeight) { screenHeight * (32f / 1080f) }
+            val dynamicTopPadding = remember(screenHeight, uiState.heroSectionEnabled) {
+                if (uiState.heroSectionEnabled) screenHeight * (980f / 1080f) else 0.dp
+            }
+            val dynamicFirstRowFocusTop = remember(screenHeight) { screenHeight * (150f / 1080f) }
+            val dynamicBottomPadding = remember(screenHeight) { screenHeight * (96f / 1080f) }
+            val dynamicHeroFadeStart = remember(screenHeight) { screenHeight * (80f / 1080f) }
+            val dynamicHeroFadeEnd = remember(screenHeight) { screenHeight * (560f / 1080f) }
+            val dynamicHeroFadeProgress = remember(
+                verticalRowListState,
+                dynamicTopPadding,
+                dynamicFirstRowFocusTop,
+                dynamicHeroFadeStart,
+                dynamicHeroFadeEnd,
+                localDensity,
+                dynamicHomeMode,
+                uiState.heroSectionEnabled
+            ) {
+                derivedStateOf {
+                    if (!dynamicHomeMode || !uiState.heroSectionEnabled) {
+                        1f
+                    } else {
+                        val firstVisibleItem = verticalRowListState.layoutInfo.visibleItemsInfo.firstOrNull()
+                        val scrollDistance = when {
+                            verticalRowListState.firstVisibleItemIndex > 0 -> Float.POSITIVE_INFINITY
+                            firstVisibleItem != null ->
+                                with(localDensity) { dynamicTopPadding.toPx() } - firstVisibleItem.offset
+                            else -> 0f
+                        }
+                        val fadeStartPx = with(localDensity) { dynamicHeroFadeStart.toPx() }
+                        val fadeEndPx = with(localDensity) { dynamicHeroFadeEnd.toPx() }
+                        1f - ((scrollDistance - fadeStartPx) / (fadeEndPx - fadeStartPx))
+                            .coerceIn(0f, 1f)
+                    }
+                }
+            }
+            val dynamicHeroFadeAlpha by animateFloatAsState(
+                targetValue = dynamicHeroFadeProgress.value,
+                animationSpec = tween(durationMillis = 180),
+                label = "dynamicHeroArtworkFade"
+            )
+            val heroMetadataBottomPadding = if (dynamicHomeMode) {
+                screenHeight * (56f / 1080f)
+            } else {
+                rowsViewportHeight
+            }
             val rowTitleLineHeight = MaterialTheme.typography.titleMedium.lineHeight
             val rowTitleHeight = remember(rowTitleLineHeight, localDensity) {
                 with(localDensity) {
@@ -1049,18 +1133,45 @@ fun ModernHomeContent(
                         .getOrDefault(NuvioTheme.spacing.xl)
                 }
             }
-            val heroBackdropHeight = remember(screenHeight, rowsViewportHeight, rowTitleHeight) { (screenHeight - rowsViewportHeight + rowTitleHeight + 14.dp).coerceAtMost(screenHeight) }
-            val verticalRowBringIntoViewSpec = remember(localDensity, defaultBringIntoViewSpec) {
-                val topInsetPx = with(localDensity) { MODERN_ROW_HEADER_FOCUS_INSET.toPx() }
-                @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-                object : BringIntoViewSpec {
-                    override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
-                    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
-                        val currentLeadingEdge = offset
-                        if (abs(currentLeadingEdge - topInsetPx) < 1f) return 0f
-                        val distance = currentLeadingEdge - topInsetPx
-                        if (distance < 0f && !verticalRowListState.canScrollBackward) return 0f
-                        return distance
+            val heroBackdropHeight = remember(screenHeight, rowsViewportHeight, rowTitleHeight, dynamicHomeMode) {
+                if (dynamicHomeMode) screenHeight
+                else (screenHeight - rowsViewportHeight + rowTitleHeight + 14.dp).coerceAtMost(screenHeight)
+            }
+            val verticalRowBringIntoViewSpec = remember(
+                localDensity,
+                defaultBringIntoViewSpec,
+                dynamicHomeMode,
+                focusState.focusedRowKey,
+                rowIndexByKey
+            ) {
+                if (dynamicHomeMode) {
+                    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+                    object : BringIntoViewSpec {
+                        override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
+                        override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+                            val focusedRowIndex = focusState.focusedRowKey?.let { rowIndexByKey.map[it] }
+                            val targetLeadingEdge = if (focusedRowIndex == 0) {
+                                with(localDensity) { dynamicFirstRowFocusTop.toPx() }
+                            } else {
+                                (containerSize - size) * 0.5f
+                            }
+                            val distance = offset - targetLeadingEdge
+                            if (distance < 0f && !verticalRowListState.canScrollBackward) return 0f
+                            return distance
+                        }
+                    }
+                } else {
+                    val topInsetPx = with(localDensity) { MODERN_ROW_HEADER_FOCUS_INSET.toPx() }
+                    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
+                    object : BringIntoViewSpec {
+                        override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
+                        override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+                            val currentLeadingEdge = offset
+                            if (abs(currentLeadingEdge - topInsetPx) < 1f) return 0f
+                            val distance = currentLeadingEdge - topInsetPx
+                            if (distance < 0f && !verticalRowListState.canScrollBackward) return 0f
+                            return distance
+                        }
                     }
                 }
             }
@@ -1078,11 +1189,25 @@ fun ModernHomeContent(
                 }.coerceAtLeast(1)
             }
 
-            val heroMediaModifier = remember(heroBackdropHeight, screenHeight, fullScreenBackdrop) {
+            val heroMediaModifier = remember(
+                heroBackdropHeight,
+                screenHeight,
+                fullScreenBackdrop,
+                dynamicHeroFadeAlpha
+            ) {
+                val artworkAlpha = if (dynamicHomeMode) dynamicHeroFadeAlpha else 1f
                 if (fullScreenBackdrop) {
-                    Modifier.align(Alignment.TopStart).fillMaxWidth().height(screenHeight)
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .fillMaxWidth()
+                        .height(screenHeight)
+                        .graphicsLayer { alpha = artworkAlpha }
                 } else {
-                    Modifier.align(Alignment.TopEnd).offset(x = NuvioTheme.spacing.huge).fillMaxWidth(MODERN_HERO_MEDIA_WIDTH_FRACTION).height(heroBackdropHeight)
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = NuvioTheme.spacing.huge)
+                        .fillMaxWidth(MODERN_HERO_MEDIA_WIDTH_FRACTION)
+                        .height(heroBackdropHeight)
                 }
             }
 
@@ -1102,15 +1227,17 @@ fun ModernHomeContent(
             }
             val onFirstFrameRenderedLambda = remember { { heroTrailerFirstFrameRendered = true } }
 
-            ModernHeroSection(
-                heroSceneState = heroSceneStateLambda,
-                isFullScreen = isFullScreenLambda,
-                heroMediaWidthPx = heroMediaWidthPx,
-                heroMediaHeightPx = heroMediaHeightPx,
-                modifier = heroMediaModifier,
-                onTrailerEnded = onTrailerEndedLambda,
-                onFirstFrameRendered = onFirstFrameRenderedLambda
-            )
+            if (!dynamicHomeMode || uiState.heroSectionEnabled) {
+                ModernHeroSection(
+                    heroSceneState = heroSceneStateLambda,
+                    isFullScreen = isFullScreenLambda,
+                    heroMediaWidthPx = heroMediaWidthPx,
+                    heroMediaHeightPx = heroMediaHeightPx,
+                    modifier = heroMediaModifier,
+                    onTrailerEnded = onTrailerEndedLambda,
+                    onFirstFrameRendered = onFirstFrameRenderedLambda
+                )
+            }
 
             // Fade content rows when ANY hero media (catalog trailer or collection
             // hero video) is playing in fullscreen — not just catalog trailers.
@@ -1126,34 +1253,41 @@ fun ModernHomeContent(
             val heroMetadataModifier = remember(rowHorizontalPadding, rowsViewportHeight) {
                 Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = rowHorizontalPadding, end = NuvioTheme.spacing.xxxl, bottom = NuvioTheme.spacing.none + rowsViewportHeight + NuvioTheme.spacing.lg)
+                    .padding(
+                        start = rowHorizontalPadding,
+                        end = NuvioTheme.spacing.xxxl,
+                        bottom = if (dynamicHomeMode) heroMetadataBottomPadding
+                        else heroMetadataBottomPadding + NuvioTheme.spacing.lg
+                    )
                     .fillMaxWidth(MODERN_HERO_TEXT_WIDTH_FRACTION)
             }
 
-            HeroTitleBlock(
-                previewProvider = {
-                    val state = heroSceneStateLambda()
-                    if (isRapidHorizontalNav.value || state.enrichmentActive) null
-                    else state.preview
-                },
-                enrichmentActive = {
-                    if (isRapidHorizontalNav.value) false
-                    else heroSceneStateLambda().enrichmentActive
-                },
-                portraitMode = !useLandscapePosters,
-                showImdbRatings = uiState.homeImdbRatingsVisibility.showRatings,
-                mdbListShowOnHero = uiState.mdbListShowOnHero,
-                mdbListRatingOrder = uiState.mdbListRatingOrder,
-                trailerPlaying = {
-                    if (isRapidHorizontalNav.value) false
-                    else {
+            if (!dynamicHomeMode || uiState.heroSectionEnabled) {
+                HeroTitleBlock(
+                    previewProvider = {
                         val state = heroSceneStateLambda()
-                        state.fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda()
-                    }
-                },
-                descriptionAutoScrollEnabled = uiState.heroDescriptionAutoScrollEnabled,
-                modifier = heroMetadataModifier
-            )
+                        if (isRapidHorizontalNav.value || state.enrichmentActive) null
+                        else state.preview
+                    },
+                    enrichmentActive = {
+                        if (isRapidHorizontalNav.value) false
+                        else heroSceneStateLambda().enrichmentActive
+                    },
+                    portraitMode = !useLandscapePosters,
+                    showImdbRatings = uiState.homeImdbRatingsVisibility.showRatings,
+                    mdbListShowOnHero = uiState.mdbListShowOnHero,
+                    mdbListRatingOrder = uiState.mdbListRatingOrder,
+                    trailerPlaying = {
+                        if (isRapidHorizontalNav.value) false
+                        else {
+                            val state = heroSceneStateLambda()
+                            state.fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda()
+                        }
+                    },
+                    descriptionAutoScrollEnabled = uiState.heroDescriptionAutoScrollEnabled,
+                    modifier = heroMetadataModifier
+                )
+            }
 
             val latestOnFocusedRowKeyChanged by rememberUpdatedState(onFocusedRowKeyChanged)
             val onActiveRowKeyChangeLambda = remember {
@@ -1270,6 +1404,11 @@ fun ModernHomeContent(
                 onFocusedHeroMediaNonceChange = onFocusedHeroMediaNonceChangeLambda,
                 onExpansionInteractionNonceChange = onExpansionInteractionNonceChangeLambda,
                 blockLeftOnFirstExpandedItem = blockLeftOnFirstExpandedItem,
+                dynamicRowStyles = dynamicRowStyles,
+                dynamicHomeMode = dynamicHomeMode,
+                dynamicRowGap = dynamicRowGap,
+                dynamicTopPadding = dynamicTopPadding,
+                dynamicBottomPadding = dynamicBottomPadding,
                 isVerticalRowsScrollingState = isVerticalRowsScrollingState,
                 modifier = Modifier
                     .align(Alignment.BottomStart)

@@ -9,8 +9,9 @@ internal enum class SettingsRailGroup {
 }
 
 internal enum class SettingsCategory(val group: SettingsRailGroup) {
-    ACCOUNT(SettingsRailGroup.YOU),
+    NERD_FAZAL(SettingsRailGroup.YOU),
     PROFILES(SettingsRailGroup.YOU),
+    ACCOUNT(SettingsRailGroup.YOU),
     WATCH_PARTY(SettingsRailGroup.YOU),
     APPEARANCE(SettingsRailGroup.LOOK),
     LAYOUT(SettingsRailGroup.LOOK),

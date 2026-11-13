@@ -7,6 +7,7 @@ import com.nuvio.tv.ui.theme.NuvioTheme
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,6 +63,7 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.focus.focusRestorer
@@ -88,6 +91,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -247,6 +251,7 @@ private fun ModernCatalogRowItem(
     expandedTrailerPreviewUrl: () -> String?,
     expandedTrailerPreviewAudioUrl: () -> String?,
     isCatalogItemWatched: (MetaPreview) -> Boolean,
+    dynamicRowStyle: String? = null,
     isFocusTarget: Boolean = false,
     onFocused: () -> Unit,
     onItemFocus: (MetaPreview) -> Unit,
@@ -377,6 +382,46 @@ private fun ModernCatalogRowItem(
             landscapeCardHeight = landscapeCatalogCardHeight
         )
     }
+    // Legacy Dynamic dimensions are defined against a 1920x1080 design canvas.
+    // Scale each axis independently so the original card proportions survive other TV sizes.
+    val dynamicPortraitWidth = LocalConfiguration.current.screenWidthDp.dp * (212f / 1920f)
+    val dynamicPortraitHeight = LocalConfiguration.current.screenHeightDp.dp * (322f / 1080f)
+    val dynamicLandscapeWidth = LocalConfiguration.current.screenWidthDp.dp * (384f / 1920f)
+    val dynamicLandscapeHeight = LocalConfiguration.current.screenHeightDp.dp * (216f / 1080f)
+    val dynamicCollectionWidth = LocalConfiguration.current.screenWidthDp.dp * (480f / 1920f)
+    val dynamicCollectionHeight = LocalConfiguration.current.screenHeightDp.dp * (270f / 1080f)
+    val dynamicServiceWidth = LocalConfiguration.current.screenWidthDp.dp * (360f / 1920f)
+    val dynamicServiceHeight = LocalConfiguration.current.screenHeightDp.dp * (203f / 1080f)
+    val dynamicSocialWidth = LocalConfiguration.current.screenWidthDp.dp * (540f / 1920f)
+    val dynamicSocialHeight = LocalConfiguration.current.screenHeightDp.dp * (312f / 1080f)
+    val dynamicReturnWidth = LocalConfiguration.current.screenWidthDp.dp * (680f / 1920f)
+    val dynamicReturnHeight = LocalConfiguration.current.screenHeightDp.dp * (178f / 1080f)
+    val dynamicFeaturedWidth = LocalConfiguration.current.screenWidthDp.dp * (640f / 1920f)
+    val dynamicFeaturedHeight = LocalConfiguration.current.screenHeightDp.dp * (360f / 1080f)
+    val dynamicFeaturedSquareWidth = LocalConfiguration.current.screenWidthDp.dp * (540f / 1920f)
+    val dynamicFeaturedSquareHeight = LocalConfiguration.current.screenHeightDp.dp * (405f / 1080f)
+    val renderedCardWidth = when (dynamicRowStyle) {
+        "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitWidth
+        "LANDSCAPE" -> dynamicLandscapeWidth
+        "SOCIAL" -> dynamicSocialWidth
+        "COLLECTION" -> dynamicCollectionWidth
+        "SERVICE", "CATALOG_SHORTCUTS" -> dynamicServiceWidth
+        "RETURN" -> dynamicReturnWidth
+        "FEATURED" -> dynamicFeaturedWidth
+        "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareWidth
+        else -> cardMetrics.width
+    }
+    val renderedCardHeight = when (dynamicRowStyle) {
+        "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitHeight
+        "LANDSCAPE" -> dynamicLandscapeHeight
+        "SOCIAL" -> dynamicSocialHeight
+        "COLLECTION" -> dynamicCollectionHeight
+        "SERVICE", "CATALOG_SHORTCUTS" -> dynamicServiceHeight
+        "RETURN" -> dynamicReturnHeight
+        "FEATURED" -> dynamicFeaturedHeight
+        "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareHeight
+        else -> cardMetrics.height
+    }
 
     ModernCarouselCard(
         item = item,
@@ -385,8 +430,8 @@ private fun ModernCatalogRowItem(
         showLabels = showLabels,
         placeholderShimmerOffsetState = placeholderShimmerOffsetState,
         cardCornerRadius = posterCardCornerRadius,
-        cardWidth = cardMetrics.width,
-        cardHeight = cardMetrics.height,
+        cardWidth = renderedCardWidth,
+        cardHeight = renderedCardHeight,
         modifier = modifier,
         focusedPosterBackdropExpandEnabled = effectiveExpandEnabled,
         isBackdropExpanded = effectiveBackdropExpanded,
@@ -436,6 +481,7 @@ private fun ModernCatalogRowItem(
 @Composable
 internal fun ModernRowSection(
     row: HeroCarouselRow,
+    dynamicRowStyle: String? = null,
     isActiveRow: () -> Boolean,
     rowFocusRequester: FocusRequester,
     isVerticalRowsScrollingState: State<Boolean>,
@@ -494,6 +540,22 @@ internal fun ModernRowSection(
     @Suppress("NAME_SHADOWING") val loadMoreRequestedTotals = loadMoreRequestedTotals.value
     @Suppress("NAME_SHADOWING") val itemFocusRequesters = itemFocusRequesters.value
     val rowKey = row.key
+    val dynamicConfiguration = LocalConfiguration.current
+    val dynamicScreenWidth = dynamicConfiguration.screenWidthDp.dp
+    val dynamicScreenHeight = dynamicConfiguration.screenHeightDp.dp
+    val dynamicMode = dynamicRowStyle != null
+    val rowStartPadding = if (dynamicMode) {
+        dynamicScreenWidth * (64f / 1920f)
+    } else {
+        52.dp
+    }
+    val rowUseLandscapePosters = when (dynamicRowStyle) {
+        "PORTRAIT", "POSTER", "TOP_10_NUMBERED", "LARGE_POSTER", "LARGE_POSTER_SMALL",
+        "LARGE_POSTER_LARGE" -> false
+        "LANDSCAPE", "FEATURED", "FEATURED_SQUARE", "LARGE_4_3",
+        "COLLECTION", "SERVICE", "SOCIAL", "RETURN", "CATALOG_SHORTCUTS" -> true
+        else -> useLandscapePosters
+    }
 
     // Per-row derived state: only invalidates when THIS row's focused index
     // changes, not when any other row's index changes in the shared map.
@@ -542,9 +604,18 @@ internal fun ModernRowSection(
             titleMediumStyle.copy(fontWeight = FontWeight.SemiBold)
         }
         val rowTitle = row.title
-        val textColor = NuvioTheme.colors.TextPrimary
-        val textModifier = remember(rowTitleBottom) {
-            Modifier.padding(start = 52.dp, bottom = rowTitleBottom)
+        val targetTitleColor = if (dynamicMode && !isActiveRow()) {
+            NuvioTheme.colors.TextSecondary
+        } else {
+            NuvioTheme.colors.TextPrimary
+        }
+        val textColor by animateColorAsState(
+            targetValue = targetTitleColor,
+            animationSpec = tween(durationMillis = 180),
+            label = "dynamicRowTitleFocus"
+        )
+        val textModifier = remember(rowTitleBottom, rowStartPadding) {
+            Modifier.padding(start = rowStartPadding, bottom = rowTitleBottom)
         }
         Text(
             text = rowTitle,
@@ -650,7 +721,15 @@ internal fun ModernRowSection(
         }
 
         val density = LocalDensity.current
-        val rowStartPadding = 52.dp
+        val rowHorizontalGap = if (dynamicRowStyle == "FEATURED" || dynamicRowStyle == "FEATURED_SQUARE" ||
+            dynamicRowStyle == "LARGE_4_3"
+        ) {
+            dynamicScreenWidth * (40f / 1920f)
+        } else if (dynamicMode) {
+            dynamicScreenWidth * (24f / 1920f)
+        } else {
+            NuvioTheme.spacing.md
+        }
         val context = LocalContext.current
         val imageLoader = context.imageLoader
 
@@ -682,7 +761,7 @@ internal fun ModernRowSection(
                     is ModernPayload.Catalog -> {
                         val url = item.imageUrl ?: return null
                         val metrics = item.catalogCardMetrics(
-                            useLandscapePosters = useLandscapePosters,
+                            useLandscapePosters = rowUseLandscapePosters,
                             portraitCardWidth = portraitCatalogCardWidth,
                             portraitCardHeight = portraitCatalogCardHeight,
                             landscapeCardWidth = landscapeCatalogCardWidth,
@@ -695,7 +774,7 @@ internal fun ModernRowSection(
                     is ModernPayload.CollectionFolder -> {
                         val url = item.imageUrl ?: return null
                         val metrics = item.catalogCardMetrics(
-                            useLandscapePosters = useLandscapePosters,
+                            useLandscapePosters = rowUseLandscapePosters,
                             portraitCardWidth = portraitCatalogCardWidth,
                             portraitCardHeight = portraitCatalogCardHeight,
                             landscapeCardWidth = landscapeCatalogCardWidth,
@@ -748,7 +827,7 @@ internal fun ModernRowSection(
                     val (wPx, hPx) = when (item.payload) {
                         is ModernPayload.Catalog -> {
                             val metrics = item.catalogCardMetrics(
-                                useLandscapePosters = useLandscapePosters,
+                                useLandscapePosters = rowUseLandscapePosters,
                                 portraitCardWidth = portraitCatalogCardWidth,
                                 portraitCardHeight = portraitCatalogCardHeight,
                                 landscapeCardWidth = landscapeCatalogCardWidth,
@@ -758,7 +837,7 @@ internal fun ModernRowSection(
                         }
                         is ModernPayload.CollectionFolder -> {
                             val metrics = item.catalogCardMetrics(
-                                useLandscapePosters = useLandscapePosters,
+                                useLandscapePosters = rowUseLandscapePosters,
                                 portraitCardWidth = portraitCatalogCardWidth,
                                 portraitCardHeight = portraitCatalogCardHeight,
                                 landscapeCardWidth = landscapeCatalogCardWidth,
@@ -784,7 +863,7 @@ internal fun ModernRowSection(
                             val (wPx, hPx) = when (item.payload) {
                                 is ModernPayload.Catalog -> {
                                     val metrics = item.catalogCardMetrics(
-                                        useLandscapePosters = useLandscapePosters,
+                                        useLandscapePosters = rowUseLandscapePosters,
                                         portraitCardWidth = portraitCatalogCardWidth,
                                         portraitCardHeight = portraitCatalogCardHeight,
                                         landscapeCardWidth = landscapeCatalogCardWidth,
@@ -794,7 +873,7 @@ internal fun ModernRowSection(
                                 }
                                 is ModernPayload.CollectionFolder -> {
                                     val metrics = item.catalogCardMetrics(
-                                        useLandscapePosters = useLandscapePosters,
+                                        useLandscapePosters = rowUseLandscapePosters,
                                         portraitCardWidth = portraitCatalogCardWidth,
                                         portraitCardHeight = portraitCatalogCardHeight,
                                         landscapeCardWidth = landscapeCatalogCardWidth,
@@ -856,7 +935,7 @@ internal fun ModernRowSection(
         // When a poster in this row expands, ensure it scrolls fully into view.
         var isExpansionScrollActive by remember { mutableStateOf(false) }
         val expandedCardWidthPx = with(density) {
-            if (useLandscapePosters) {
+            if (rowUseLandscapePosters) {
                 landscapeCatalogCardWidth.roundToPx()
             } else {
                 (portraitCatalogCardHeight * (16f / 9f)).roundToPx()
@@ -917,7 +996,7 @@ internal fun ModernRowSection(
                     }
                     .focusGroup(),
                 contentPadding = PaddingValues(horizontal = rowStartPadding),
-                horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(rowHorizontalGap)
             ) {
                 itemsIndexed(
                     items = row.items.list,
@@ -1015,12 +1094,37 @@ internal fun ModernRowSection(
                             Box(modifier = if (placeholderFocusBlock) {
                                 Modifier.focusProperties { canFocus = false }
                             } else Modifier) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (dynamicRowStyle == "TOP_10_NUMBERED") {
+                                val configuration = LocalConfiguration.current
+                                val numberWidth = configuration.screenWidthDp.dp * (138f / 1920f)
+                                val numberFontSize = (configuration.screenHeightDp * (260f / 1080f)).sp
+                                val numberBottomGap = configuration.screenHeightDp.dp * (14f / 1080f)
+                                Box(
+                                    modifier = Modifier
+                                        .width(numberWidth)
+                                        .height(portraitCatalogCardHeight),
+                                    contentAlignment = Alignment.BottomCenter
+                                ) {
+                                    Text(
+                                        text = (index + 1).toString(),
+                                        modifier = Modifier.padding(bottom = numberBottomGap),
+                                        color = Color.White.copy(alpha = 0.86f),
+                                        fontSize = if (index >= 9) numberFontSize * 0.78f else numberFontSize,
+                                        fontWeight = FontWeight.Black,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Visible
+                                    )
+                                }
+                            }
                             ModernCatalogRowItem(
                                 item = item,
                                 payload = payload,
                                 requester = requester,
                                 isTargetItem = isTargetItem,
-                                useLandscapePosters = useLandscapePosters,
+                                useLandscapePosters = rowUseLandscapePosters,
                                 alwaysShowLandscapeClearlogo = alwaysShowLandscapeClearlogo,
                                 showLabels = showLabels,
                                 placeholderShimmerOffsetState = placeholderShimmerOffsetState,
@@ -1037,6 +1141,7 @@ internal fun ModernRowSection(
                                 landscapeCatalogCardWidth = landscapeCatalogCardWidth,
                                 landscapeCatalogCardHeight = landscapeCatalogCardHeight,
                                 isCatalogItemWatched = isCatalogItemWatched,
+                                dynamicRowStyle = dynamicRowStyle,
                                 onFocused = onFocused,
                                 onItemFocus = onItemFocus,
                                 onPreloadAdjacentItem = remember(nextCatalogItem, prevCatalogItem, onPreloadAdjacentItem) {
@@ -1054,6 +1159,7 @@ internal fun ModernRowSection(
                                 enrichedPreviews = enrichedPreviews
                             )
                             } // Box
+                            } // Row
                         }
                     }
                 }

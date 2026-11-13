@@ -1000,7 +1000,7 @@ private fun FollowLayoutContent(
                 )
             }
         }
-        HomeLayout.MODERN -> ModernHomeContent(
+        HomeLayout.MODERN, HomeLayout.DYNAMIC -> ModernHomeContent(
             uiState = homeState,
             modernPresentation = homeState.modernHomePresentation,
             focusState = focusState,
@@ -1022,7 +1022,8 @@ private fun FollowLayoutContent(
             onSaveFocusState = onSaveFocusState,
             onFocusedRowKeyChanged = onFocusedRowKeyChanged,
             scrollToTopTrigger = scrollToTopTrigger,
-            blockLeftOnFirstExpandedItem = true
+            blockLeftOnFirstExpandedItem = true,
+            dynamicHomeMode = uiState.homeLayout == HomeLayout.DYNAMIC
         )
     }
 }

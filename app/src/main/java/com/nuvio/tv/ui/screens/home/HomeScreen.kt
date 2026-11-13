@@ -119,7 +119,7 @@ fun HomeScreen(
     val hasCollectionContent = uiState.homeRows.any { it is HomeRow.CollectionRow }
     val hasHeroContent = uiState.heroItems.isNotEmpty()
     val modernPresentationReady =
-        uiState.homeLayout != HomeLayout.MODERN ||
+        (uiState.homeLayout != HomeLayout.MODERN && uiState.homeLayout != HomeLayout.DYNAMIC) ||
             modernPresentation.rows.list.isNotEmpty() ||
             (uiState.heroSectionEnabled && hasHeroContent && !hasCatalogContent && !hasCollectionContent)
     var showHomeContentWithAnimation by rememberSaveable { mutableStateOf(false) }
@@ -131,7 +131,7 @@ fun HomeScreen(
     var posterOptionsTarget by remember { mutableStateOf<HomePosterOptionsTarget?>(null) }
 
     LaunchedEffect(uiState.homeLayout) {
-        if (uiState.homeLayout != HomeLayout.MODERN) {
+        if (uiState.homeLayout != HomeLayout.MODERN && uiState.homeLayout != HomeLayout.DYNAMIC) {
             HeroBackdropState.update(null)
         }
     }
@@ -404,6 +404,19 @@ fun HomeScreen(
                                 isCatalogItemWatched = isCatalogItemWatched,
                                 onCatalogItemLongPress = onCatalogItemLongPress
                             )
+
+                            HomeLayout.DYNAMIC -> DynamicHomeRoute(
+                                viewModel = viewModel,
+                                uiState = uiState,
+                                onNavigateToDetail = onNavigateToDetailStable,
+                                onContinueWatchingClick = onContinueWatchingClickStable,
+                                onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginningStable,
+                                onContinueWatchingPlayManually = onContinueWatchingPlayManuallyStable,
+                                showContinueWatchingManualPlayOption = effectiveAutoplayEnabled,
+                                onNavigateToFolderDetail = onNavigateToFolderDetailStable,
+                                isCatalogItemWatched = isCatalogItemWatched,
+                                onCatalogItemLongPress = onCatalogItemLongPress
+                            )
                         }
                     }
                 }
@@ -630,6 +643,7 @@ private fun GridHomeRoute(
 private fun ModernHomeRoute(
     viewModel: HomeViewModel,
     uiState: HomeUiState,
+    dynamicMode: Boolean = false,
     onNavigateToDetail: (String, String, String) -> Unit,
     onContinueWatchingClick: (ContinueWatchingItem) -> Unit,
     onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit,
@@ -674,9 +688,67 @@ private fun ModernHomeRoute(
             viewModel.preloadAdjacentItem(item)
         }
     }
+    val dynamicRowStyles = remember(modernPresentation.rows, uiState.dynamicHomeRowStyles, dynamicMode) {
+        if (!dynamicMode) {
+            emptyMap()
+        } else {
+            val rowInputs = modernPresentation.rows.list.map { row ->
+                val firstPayload = row.items.list.firstOrNull()?.payload
+                val catalogPayload = firstPayload as? ModernPayload.Catalog
+                val initialStyle = when {
+                    row.key == MODERN_CONTINUE_WATCHING_ROW_KEY ||
+                        row.key == MODERN_UPCOMING_ROW_KEY -> DynamicHomeRowStyle.CONTINUE_WATCHING
+                    row.key == "social_activity" -> DynamicHomeRowStyle.SOCIAL
+                    row.key == "last_session" -> DynamicHomeRowStyle.RETURN
+                    firstPayload is ModernPayload.CollectionFolder -> DynamicHomeRowStyle.CATALOG_SHORTCUTS
+                    row.apiType in setOf("channel", "tv", "channels", "live", "iptv") ->
+                        DynamicHomeRowStyle.LANDSCAPE
+                    else -> DynamicHomeRowClassifier.initialStyleForCatalog(row.title)
+                }
+                // Settings persist catalogue styles by addon + base URL + type + catalogue ID.
+                // Resolve with that same identity; row.key is a presentation key and is not stable
+                // across every home-row source.
+                val persistedCatalogKey = catalogPayload?.addonBaseUrl
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { baseUrl ->
+                        com.nuvio.tv.domain.model.catalogRowStableKey(
+                            addonId = row.addonId.orEmpty(),
+                            addonBaseUrl = baseUrl,
+                            type = row.apiType.orEmpty(),
+                            catalogId = row.catalogId.orEmpty()
+                        )
+                    }
+                val manualStyle = (persistedCatalogKey?.let(uiState.dynamicHomeRowStyles::get)
+                    ?: uiState.dynamicHomeRowStyles[row.key])
+                    ?.let { name ->
+                        runCatching { DynamicHomeRowStyle.valueOf(name) }
+                            .getOrDefault(DynamicHomeRowStyle.AUTO)
+                    } ?: DynamicHomeRowStyle.AUTO
+                DynamicHomeRowInput(
+                    key = row.key,
+                    title = row.title,
+                    catalogId = row.catalogId,
+                    hasAddonBaseUrl = !catalogPayload?.addonBaseUrl.isNullOrBlank(),
+                    hasCatalogIdentity = !row.catalogId.isNullOrBlank() && !row.addonId.isNullOrBlank(),
+                    itemCount = if (row.isLoading) 0 else row.items.list.count { item ->
+                        val payload = item.payload
+                        payload is ModernPayload.Catalog && !payload.itemId.startsWith("__placeholder_")
+                    },
+                    initialStyle = initialStyle,
+                    manualStyle = manualStyle
+                )
+            }
+            DynamicHomeRowClassifier.classify(rowInputs)
+                .mapIndexed { index, style -> modernPresentation.rows.list[index].key to style.name }
+                .toMap()
+        }
+    }
+
     ModernHomeContent(
         uiState = uiState,
         modernPresentation = modernPresentation,
+        dynamicRowStyles = dynamicRowStyles,
+        dynamicHomeMode = dynamicMode,
         focusState = focusState,
         scrollToTopTrigger = scrollToTopTrigger,
         enrichingItemId = enrichingItemId,
@@ -709,6 +781,34 @@ private fun ModernHomeRoute(
         onRequestLazyCatalogLoad = remember(viewModel) {
             { catalogKey: String -> viewModel.requestLazyCatalogLoad(catalogKey) }
         }
+    )
+}
+
+@Composable
+private fun DynamicHomeRoute(
+    viewModel: HomeViewModel,
+    uiState: HomeUiState,
+    onNavigateToDetail: (String, String, String) -> Unit,
+    onContinueWatchingClick: (ContinueWatchingItem) -> Unit,
+    onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit,
+    onContinueWatchingPlayManually: (ContinueWatchingItem) -> Unit,
+    showContinueWatchingManualPlayOption: Boolean,
+    onNavigateToFolderDetail: (String, String) -> Unit = { _, _ -> },
+    isCatalogItemWatched: (MetaPreview) -> Boolean,
+    onCatalogItemLongPress: (MetaPreview, String) -> Unit
+) {
+    ModernHomeRoute(
+        viewModel = viewModel,
+        uiState = uiState,
+        dynamicMode = true,
+        onNavigateToDetail = onNavigateToDetail,
+        onContinueWatchingClick = onContinueWatchingClick,
+        onContinueWatchingStartFromBeginning = onContinueWatchingStartFromBeginning,
+        onContinueWatchingPlayManually = onContinueWatchingPlayManually,
+        showContinueWatchingManualPlayOption = showContinueWatchingManualPlayOption,
+        onNavigateToFolderDetail = onNavigateToFolderDetail,
+        isCatalogItemWatched = isCatalogItemWatched,
+        onCatalogItemLongPress = onCatalogItemLongPress
     )
 }
 

@@ -41,6 +41,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -146,6 +147,11 @@ internal fun ModernHomeRowsList(
     onFocusedHeroMediaNonceChange: (Int) -> Unit,
     onExpansionInteractionNonceChange: (Int) -> Unit,
     blockLeftOnFirstExpandedItem: Boolean = false,
+    dynamicRowStyles: Map<String, String> = emptyMap(),
+    dynamicHomeMode: Boolean = false,
+    dynamicRowGap: Dp = 24.dp,
+    dynamicTopPadding: Dp = 0.dp,
+    dynamicBottomPadding: Dp = 96.dp,
     modifier: Modifier = Modifier
 ) {
     // Unwrap StableRef wrappers for internal use (not passed to child composables)
@@ -363,8 +369,13 @@ internal fun ModernHomeRowsList(
                         }
                     },
                 ),
-            contentPadding = PaddingValues(bottom = rowsViewportHeight),
-            verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.xl)
+            contentPadding = PaddingValues(
+                top = if (dynamicHomeMode) dynamicTopPadding else 0.dp,
+                bottom = if (dynamicHomeMode) dynamicBottomPadding else rowsViewportHeight
+            ),
+            verticalArrangement = Arrangement.spacedBy(
+                if (dynamicHomeMode) dynamicRowGap else NuvioTheme.spacing.xl
+            )
         ) {
             itemsIndexed(
                 items = carouselRows.list,
@@ -425,9 +436,14 @@ internal fun ModernHomeRowsList(
                 }
                 ModernRowSection(
                     row = row,
+                    dynamicRowStyle = dynamicRowStyles[row.key],
                     isActiveRow = isActiveRowLambda,
                     rowFocusRequester = rowFocusRequesters.getOrPut(row.key) { FocusRequester() },
-                    rowTitleBottom = 14.dp, // rowTitleBottom
+                    rowTitleBottom = if (dynamicHomeMode) {
+                        LocalConfiguration.current.screenHeightDp.dp * (34f / 1080f)
+                    } else {
+                        14.dp
+                    },
                     defaultBringIntoViewSpec = defaultBringIntoViewSpec,
                     focusStateCatalogRowScrollIndex = focusState.catalogRowScrollStates[row.key] ?: 0,
                     focusStateCatalogRowScrollAnchor = focusState.catalogRowScrollAnchors[row.key],
