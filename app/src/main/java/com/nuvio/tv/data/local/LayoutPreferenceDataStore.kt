@@ -75,6 +75,7 @@ class LayoutPreferenceDataStore @Inject constructor(
     private val homeCatalogOrderKeysKey = stringPreferencesKey("home_catalog_order_keys")
     private val disabledHomeCatalogKeysKey = stringPreferencesKey("disabled_home_catalog_keys")
     private val customCatalogTitlesKey = stringPreferencesKey("custom_catalog_titles")
+    private val dynamicHomeRowStylesKey = stringPreferencesKey("dynamic_home_row_styles")
     private val sidebarCollapsedKey = booleanPreferencesKey("sidebar_collapsed_by_default")
     private val modernSidebarEnabledKey = booleanPreferencesKey("modern_sidebar_enabled")
     private val legacyModernSidebarEnabledKey = booleanPreferencesKey("glass_sidepanel_enabled")
@@ -180,6 +181,14 @@ class LayoutPreferenceDataStore @Inject constructor(
 
     val hasChosenLayout: Flow<Boolean> = profileFlow { prefs ->
         prefs[hasChosenKey] ?: false
+    }
+
+    /**
+     * Per-catalog Dynamic Home style overrides, keyed by CatalogRow.stableKey().
+     * Values are enum names so the data layer does not depend on UI presentation types.
+     */
+    val dynamicHomeRowStyles: Flow<Map<String, String>> = profileFlow { prefs ->
+        parseDynamicHomeRowStyles(prefs[dynamicHomeRowStylesKey])
     }
 
     val heroCatalogSelections: Flow<List<String>> = profileFlow { prefs ->
@@ -517,6 +526,24 @@ class LayoutPreferenceDataStore @Inject constructor(
                     FocusedPosterTrailerPlaybackTarget.HERO_MEDIA.name
             }
             prefs[hasChosenKey] = true
+        }
+    }
+
+    suspend fun setDynamicHomeRowStyle(catalogKey: String, styleName: String?) {
+        val normalizedKey = catalogKey.trim()
+        if (normalizedKey.isEmpty()) return
+        store().edit { prefs ->
+            val styles = parseDynamicHomeRowStyles(prefs[dynamicHomeRowStylesKey]).toMutableMap()
+            if (styleName.isNullOrBlank() || styleName == "AUTO") {
+                styles.remove(normalizedKey)
+            } else {
+                styles[normalizedKey] = styleName
+            }
+            if (styles.isEmpty()) {
+                prefs.remove(dynamicHomeRowStylesKey)
+            } else {
+                prefs[dynamicHomeRowStylesKey] = gson.toJson(styles)
+            }
         }
     }
 
@@ -870,6 +897,18 @@ class LayoutPreferenceDataStore @Inject constructor(
             .filter { it.isNotEmpty() }
             .distinct()
             .toList()
+    }
+
+    private fun parseDynamicHomeRowStyles(json: String?): Map<String, String> {
+        if (json.isNullOrBlank()) return emptyMap()
+        return try {
+            val type = object : TypeToken<Map<String, String>>() {}.type
+            gson.fromJson<Map<String, String>>(json, type).orEmpty()
+                .filterKeys { it.isNotBlank() }
+                .filterValues { it.isNotBlank() }
+        } catch (_: Exception) {
+            emptyMap()
+        }
     }
 
     private fun parseCustomTitles(json: String?): Map<String, String> {
