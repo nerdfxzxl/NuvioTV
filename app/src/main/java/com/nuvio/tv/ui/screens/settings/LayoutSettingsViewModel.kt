@@ -2,6 +2,7 @@ package com.nuvio.tv.ui.screens.settings
 
 import com.nuvio.tv.core.util.readAppLogoBytes
 import com.nuvio.tv.domain.model.catalogRowLegacyKey
+import com.nuvio.tv.domain.model.catalogRowStableKey
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
@@ -46,6 +47,7 @@ data class LayoutSettingsUiState(
     val hasChosen: Boolean = false,
     val availableCatalogs: List<CatalogInfo> = emptyList(),
     val heroCatalogKeys: List<String> = emptyList(),
+    val dynamicHomeRowStyles: Map<String, String> = emptyMap(),
     val sidebarCollapsedByDefault: Boolean = false,
     val modernSidebarEnabled: Boolean = false,
     val modernSidebarBlurEnabled: Boolean = false,
@@ -99,12 +101,14 @@ data class LayoutSettingsUiState(
 data class CatalogInfo(
     val key: String,
     val name: String,
-    val addonName: String
+    val addonName: String,
+    val stableKey: String = key
 )
 
 sealed class LayoutSettingsEvent {
     data class SelectLayout(val layout: HomeLayout) : LayoutSettingsEvent()
     data class ToggleHeroCatalog(val catalogKey: String) : LayoutSettingsEvent()
+    data class SetDynamicHomeRowStyle(val catalogKey: String, val styleName: String?) : LayoutSettingsEvent()
     data class SetSidebarCollapsed(val collapsed: Boolean) : LayoutSettingsEvent()
     data class SetModernSidebarEnabled(val enabled: Boolean) : LayoutSettingsEvent()
     data class SetModernSidebarBlurEnabled(val enabled: Boolean) : LayoutSettingsEvent()
@@ -214,6 +218,11 @@ class LayoutSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             layoutPreferenceDataStore.heroCatalogSelections.distinctUntilChanged().collectLatest { keys ->
                 updateUiStateIfChanged { it.copy(heroCatalogKeys = keys) }
+            }
+        }
+        viewModelScope.launch {
+            layoutPreferenceDataStore.dynamicHomeRowStyles.distinctUntilChanged().collectLatest { styles ->
+                updateUiStateIfChanged { it.copy(dynamicHomeRowStyles = styles) }
             }
         }
         viewModelScope.launch {
@@ -455,6 +464,8 @@ class LayoutSettingsViewModel @Inject constructor(
         when (event) {
             is LayoutSettingsEvent.SelectLayout -> selectLayout(event.layout)
             is LayoutSettingsEvent.ToggleHeroCatalog -> toggleHeroCatalog(event.catalogKey)
+            is LayoutSettingsEvent.SetDynamicHomeRowStyle ->
+                setDynamicHomeRowStyle(event.catalogKey, event.styleName)
             is LayoutSettingsEvent.SetSidebarCollapsed -> setSidebarCollapsed(event.collapsed)
             is LayoutSettingsEvent.SetModernSidebarEnabled -> setModernSidebarEnabled(event.enabled)
             is LayoutSettingsEvent.SetModernSidebarBlurEnabled -> setModernSidebarBlurEnabled(event.enabled)
@@ -583,6 +594,15 @@ class LayoutSettingsViewModel @Inject constructor(
         if (_uiState.value.selectedLayout == layout && _uiState.value.hasChosen) return
         viewModelScope.launch {
             layoutPreferenceDataStore.setLayout(layout)
+        }
+    }
+
+    private fun setDynamicHomeRowStyle(catalogKey: String, styleName: String?) {
+        val current = _uiState.value.dynamicHomeRowStyles[catalogKey]
+        val next = styleName?.takeUnless { it == "AUTO" }
+        if (current == next) return
+        viewModelScope.launch {
+            layoutPreferenceDataStore.setDynamicHomeRowStyle(catalogKey, next)
         }
     }
 
@@ -1028,7 +1048,13 @@ class LayoutSettingsViewModel @Inject constructor(
                             CatalogInfo(
                                 key = catalogRowLegacyKey(addon.id, catalog.apiType, catalog.id),
                                 name = catalog.name,
-                                addonName = addon.displayName
+                                addonName = addon.displayName,
+                                stableKey = catalogRowStableKey(
+                                    addon.id,
+                                    addon.baseUrl,
+                                    catalog.apiType,
+                                    catalog.id
+                                )
                             )
                         }
                 }.distinctBy { it.key }
