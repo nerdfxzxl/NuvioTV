@@ -1265,26 +1265,26 @@ fun ModernHomeContent(
             if (!dynamicHomeMode || uiState.heroSectionEnabled) {
                 HeroTitleBlock(
                     previewProvider = {
-                    val state = heroSceneStateLambda()
-                    if (isRapidHorizontalNav.value || state.enrichmentActive) null
-                    else state.preview
-                },
-                enrichmentActive = {
-                    if (isRapidHorizontalNav.value) false
-                    else heroSceneStateLambda().enrichmentActive
-                },
-                portraitMode = !useLandscapePosters,
-                showImdbRatings = uiState.homeImdbRatingsVisibility.showRatings,
-                mdbListShowOnHero = uiState.mdbListShowOnHero,
-                mdbListRatingOrder = uiState.mdbListRatingOrder,
-                trailerPlaying = {
-                    if (isRapidHorizontalNav.value) false
-                    else {
                         val state = heroSceneStateLambda()
-                        state.fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda()
-                    }
-                },
-                descriptionAutoScrollEnabled = uiState.heroDescriptionAutoScrollEnabled,
+                        if (isRapidHorizontalNav.value || state.enrichmentActive) null
+                        else state.preview
+                    },
+                    enrichmentActive = {
+                        if (isRapidHorizontalNav.value) false
+                        else heroSceneStateLambda().enrichmentActive
+                    },
+                    portraitMode = !useLandscapePosters,
+                    showImdbRatings = uiState.homeImdbRatingsVisibility.showRatings,
+                    mdbListShowOnHero = uiState.mdbListShowOnHero,
+                    mdbListRatingOrder = uiState.mdbListRatingOrder,
+                    trailerPlaying = {
+                        if (isRapidHorizontalNav.value) false
+                        else {
+                            val state = heroSceneStateLambda()
+                            state.fullScreenBackdrop && shouldPlayTrailerLambda() && heroTrailerRenderedLambda()
+                        }
+                    },
+                    descriptionAutoScrollEnabled = uiState.heroDescriptionAutoScrollEnabled,
                     modifier = heroMetadataModifier
                 )
             }
