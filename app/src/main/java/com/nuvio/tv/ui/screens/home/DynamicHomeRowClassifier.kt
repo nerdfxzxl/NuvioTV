@@ -112,11 +112,8 @@ internal object DynamicHomeRowClassifier {
 
             if (!featuredAssigned && isCatalog && !isContinueOrUpcoming) {
                 featuredAssigned = true
-                return@map when {
-                    row.manualStyle != DynamicHomeRowStyle.AUTO -> row.manualStyle
-                    row.initialStyle == DynamicHomeRowStyle.LANDSCAPE -> DynamicHomeRowStyle.LANDSCAPE
-                    else -> DynamicHomeRowStyle.FEATURED
-                }
+                return@map row.manualStyle.takeUnless { it == DynamicHomeRowStyle.AUTO }
+                    ?: DynamicHomeRowStyle.FEATURED
             }
 
             // Manual choice wins for every row, but does not rewrite the automatic
