@@ -214,7 +214,7 @@ private fun LayoutOptionCard(
                         HomeLayout.GRID -> GridLayoutPreview(
                             modifier = Modifier.fillMaxSize()
                         )
-                        HomeLayout.MODERN -> ModernLayoutPreview(
+                        HomeLayout.MODERN, HomeLayout.DYNAMIC -> ModernLayoutPreview(
                             modifier = Modifier.fillMaxSize()
                         )
                     }
@@ -227,6 +227,7 @@ private fun LayoutOptionCard(
                         HomeLayout.CLASSIC -> stringResource(R.string.layout_classic)
                         HomeLayout.GRID -> stringResource(R.string.layout_grid)
                         HomeLayout.MODERN -> stringResource(R.string.layout_modern)
+                        HomeLayout.DYNAMIC -> stringResource(R.string.layout_dynamic)
                     },
                     style = MaterialTheme.typography.titleLarge,
                     color = if (isSelected || isFocused) NuvioTheme.colors.TextPrimary else NuvioTheme.colors.TextSecondary
@@ -239,6 +240,7 @@ private fun LayoutOptionCard(
                     HomeLayout.CLASSIC -> stringResource(R.string.layout_classic_desc)
                     HomeLayout.GRID -> stringResource(R.string.layout_grid_desc)
                     HomeLayout.MODERN -> stringResource(R.string.layout_modern_desc)
+                    HomeLayout.DYNAMIC -> stringResource(R.string.layout_dynamic_desc)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = NuvioTheme.colors.TextTertiary
