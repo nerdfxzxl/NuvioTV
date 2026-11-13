@@ -725,6 +725,7 @@ private fun ModernHomeRoute(
         uiState = uiState,
         modernPresentation = modernPresentation,
         dynamicRowStyles = dynamicRowStyles,
+        dynamicHomeMode = dynamicMode,
         focusState = focusState,
         scrollToTopTrigger = scrollToTopTrigger,
         enrichingItemId = enrichingItemId,
