@@ -1112,7 +1112,7 @@ fun ModernHomeContent(
                 label = "dynamicHeroArtworkFade"
             )
             val heroMetadataBottomPadding = if (dynamicHomeMode) {
-                screenHeight * (120f / 1080f)
+                screenHeight * (56f / 1080f)
             } else {
                 rowsViewportHeight
             }
@@ -1241,7 +1241,12 @@ fun ModernHomeContent(
             val heroMetadataModifier = remember(rowHorizontalPadding, rowsViewportHeight) {
                 Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = rowHorizontalPadding, end = NuvioTheme.spacing.xxxl, bottom = NuvioTheme.spacing.none + heroMetadataBottomPadding + NuvioTheme.spacing.lg)
+                    .padding(
+                        start = rowHorizontalPadding,
+                        end = NuvioTheme.spacing.xxxl,
+                        bottom = if (dynamicHomeMode) heroMetadataBottomPadding
+                        else heroMetadataBottomPadding + NuvioTheme.spacing.lg
+                    )
                     .fillMaxWidth(MODERN_HERO_TEXT_WIDTH_FRACTION)
             }
 
