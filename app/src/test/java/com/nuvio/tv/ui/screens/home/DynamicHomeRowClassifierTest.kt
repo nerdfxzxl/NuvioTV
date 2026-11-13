@@ -82,6 +82,20 @@ class DynamicHomeRowClassifierTest {
     }
 
     @Test
+    fun preclassifiedStackedRankingUsesTheSingleNumberedSlot() {
+        val result = DynamicHomeRowRowClassifierTestHelper.classifyStackedRows()
+
+        assertEquals(
+            listOf(
+                DynamicHomeRowStyle.TOP_10_NUMBERED,
+                DynamicHomeRowStyle.PORTRAIT,
+                DynamicHomeRowStyle.LANDSCAPE
+            ),
+            result
+        )
+    }
+
+    @Test
     fun rankingWithFewerThanFiveItemsDoesNotConsumeNumberedSlot() {
         val result = DynamicHomeRowClassifier.classify(
             listOf(catalog("Top 10 Movies", count = 4), catalog("Trending Series", count = 8))
@@ -165,4 +179,32 @@ class DynamicHomeRowClassifierTest {
             result
         )
     }
+}
+
+private object DynamicHomeRowRowClassifierTestHelper {
+    fun classifyStackedRows(): List<DynamicHomeRowStyle> =
+        DynamicHomeRowClassifier.classify(
+            listOf(
+                DynamicHomeRowInput(
+                    key = "addon_movie_top",
+                    title = "Movies",
+                    catalogId = "catalog_top",
+                    itemCount = 12,
+                    initialStyle = DynamicHomeRowStyle.TOP_10_STACKED
+                ),
+                DynamicHomeRowInput(
+                    key = "addon_series_top",
+                    title = "Series",
+                    catalogId = "catalog_series",
+                    itemCount = 12,
+                    initialStyle = DynamicHomeRowStyle.TOP_10_STACKED
+                ),
+                DynamicHomeRowInput(
+                    key = "addon_documentaries",
+                    title = "Documentaries",
+                    catalogId = "documentaries",
+                    itemCount = 12
+                )
+            )
+        )
 }
