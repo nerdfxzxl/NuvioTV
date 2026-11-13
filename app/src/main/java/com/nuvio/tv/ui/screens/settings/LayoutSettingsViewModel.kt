@@ -1057,7 +1057,7 @@ class LayoutSettingsViewModel @Inject constructor(
                                 )
                             )
                         }
-                }.distinctBy { it.key }
+                }.distinctBy { it.stableKey }
                 updateUiStateIfChanged { it.copy(availableCatalogs = catalogs) }
             }
         }
