@@ -106,7 +106,10 @@ internal object DynamicHomeRowClassifier {
             // Legacy assigns the first non-empty addon catalogue to the 16:9
             // showcase during catalogue assembly, before dinAtribuirTipos runs.
             // A manual style still wins, but the showcase slot remains consumed.
-            if (!featuredAssigned && isCatalog) {
+            val isContinueOrUpcoming =
+                row.key == CONTINUE_WATCHING_KEY || row.key == UPCOMING_KEY
+
+            if (!featuredAssigned && isCatalog && !isContinueOrUpcoming) {
                 featuredAssigned = true
                 return@map when {
                     row.manualStyle != DynamicHomeRowStyle.AUTO -> row.manualStyle
@@ -119,7 +122,7 @@ internal object DynamicHomeRowClassifier {
                 return@map row.manualStyle
             }
 
-            if (row.key == CONTINUE_WATCHING_KEY || row.key == UPCOMING_KEY) {
+            if (isContinueOrUpcoming) {
                 return@map row.initialStyle
             }
 
