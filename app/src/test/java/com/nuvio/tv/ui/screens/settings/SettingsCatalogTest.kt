@@ -17,8 +17,9 @@ class SettingsCatalogTest {
 
         assertEquals(
             listOf(
-                SettingsCategory.ACCOUNT,
                 SettingsCategory.PROFILES,
+                SettingsCategory.NERD_FAZAL,
+                SettingsCategory.ACCOUNT,
                 SettingsCategory.APPEARANCE,
                 SettingsCategory.LAYOUT,
                 SettingsCategory.CONTENT_DISCOVERY,
@@ -31,6 +32,37 @@ class SettingsCatalogTest {
             ),
             categories
         )
+    }
+
+    @Test
+    fun `Nerd Fazal settings stays between profiles and account for primary profiles`() {
+        val categories = visibleSettingsCategories(
+            isPrimaryProfile = true,
+            isEssentialMode = false,
+            isDebugBuild = false
+        )
+
+        assertEquals(
+            listOf(
+                SettingsCategory.PROFILES,
+                SettingsCategory.NERD_FAZAL,
+                SettingsCategory.ACCOUNT
+            ),
+            categories.take(3)
+        )
+    }
+
+    @Test
+    fun `Nerd Fazal settings remains available on secondary profiles`() {
+        val categories = visibleSettingsCategories(
+            isPrimaryProfile = false,
+            isEssentialMode = false,
+            isDebugBuild = false
+        )
+
+        assertTrue(SettingsCategory.NERD_FAZAL in categories)
+        assertFalse(SettingsCategory.PROFILES in categories)
+        assertFalse(SettingsCategory.ACCOUNT in categories)
     }
 
     @Test
@@ -119,7 +151,7 @@ class SettingsCatalogTest {
             assertFalse(SettingsCategory.WATCH_PARTY in unavailable)
         }
         assertEquals(
-            listOf(SettingsCategory.ACCOUNT, SettingsCategory.PROFILES, SettingsCategory.WATCH_PARTY),
+            listOf(SettingsCategory.PROFILES, SettingsCategory.NERD_FAZAL, SettingsCategory.ACCOUNT, SettingsCategory.WATCH_PARTY),
             visibleSettingsCategories(true, isEssentialMode = false, isDebugBuild = false, isWatchPartyAvailable = true).take(3)
         )
     }
