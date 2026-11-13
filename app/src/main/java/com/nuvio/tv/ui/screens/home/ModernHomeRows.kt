@@ -515,9 +515,8 @@ internal fun ModernRowSection(
     @Suppress("NAME_SHADOWING") val itemFocusRequesters = itemFocusRequesters.value
     val rowKey = row.key
     val rowUseLandscapePosters = when (dynamicRowStyle) {
-        "PORTRAIT" -> false
-        "LANDSCAPE", "FEATURED" -> true
         "PORTRAIT", "TOP_10_NUMBERED" -> false
+        "LANDSCAPE", "FEATURED", "FEATURED_SQUARE", "LARGE_4_3" -> true
         else -> useLandscapePosters
     }
 
@@ -676,7 +675,21 @@ internal fun ModernRowSection(
         }
 
         val density = LocalDensity.current
-        val rowStartPadding = 52.dp
+        val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+        val rowStartPadding = if (dynamicRowStyle != null) {
+            screenWidthDp * (64f / 1920f)
+        } else {
+            52.dp
+        }
+        val rowHorizontalGap = if (dynamicRowStyle == "FEATURED" || dynamicRowStyle == "FEATURED_SQUARE" ||
+            dynamicRowStyle == "LARGE_4_3"
+        ) {
+            screenWidthDp * (40f / 1920f)
+        } else if (dynamicRowStyle != null) {
+            screenWidthDp * (24f / 1920f)
+        } else {
+            NuvioTheme.spacing.md
+        }
         val context = LocalContext.current
         val imageLoader = context.imageLoader
 
@@ -943,7 +956,7 @@ internal fun ModernRowSection(
                     }
                     .focusGroup(),
                 contentPadding = PaddingValues(horizontal = rowStartPadding),
-                horizontalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.md)
+                horizontalArrangement = Arrangement.spacedBy(rowHorizontalGap)
             ) {
                 itemsIndexed(
                     items = row.items.list,
@@ -1049,8 +1062,7 @@ internal fun ModernRowSection(
                                 Box(
                                     modifier = Modifier
                                         .width(numberWidth)
-                                        .height(portraitCatalogCardHeight)
-                                        .zIndex(0.5f),
+                                        .height(portraitCatalogCardHeight),
                                     contentAlignment = Alignment.BottomCenter
                                 ) {
                                     Text(
