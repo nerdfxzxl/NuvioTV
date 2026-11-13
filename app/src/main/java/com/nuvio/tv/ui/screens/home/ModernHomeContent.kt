@@ -1139,7 +1139,7 @@ fun ModernHomeContent(
                     object : BringIntoViewSpec {
                         override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
                         override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
-                            val focusedRowIndex = focusState.focusedRowKey?.let(rowIndexByKey::get)
+                            val focusedRowIndex = focusState.focusedRowKey?.let { rowIndexByKey.map[it] }
                             val targetLeadingEdge = if (focusedRowIndex == 0) {
                                 with(localDensity) { dynamicFirstRowFocusTop.toPx() }
                             } else {
