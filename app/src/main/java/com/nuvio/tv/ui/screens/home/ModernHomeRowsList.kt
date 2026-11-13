@@ -147,6 +147,9 @@ internal fun ModernHomeRowsList(
     onExpansionInteractionNonceChange: (Int) -> Unit,
     blockLeftOnFirstExpandedItem: Boolean = false,
     dynamicRowStyles: Map<String, String> = emptyMap(),
+    dynamicHomeMode: Boolean = false,
+    dynamicRowGap: Dp = 24.dp,
+    dynamicBottomPadding: Dp = 96.dp,
     modifier: Modifier = Modifier
 ) {
     // Unwrap StableRef wrappers for internal use (not passed to child composables)
@@ -364,8 +367,12 @@ internal fun ModernHomeRowsList(
                         }
                     },
                 ),
-            contentPadding = PaddingValues(bottom = rowsViewportHeight),
-            verticalArrangement = Arrangement.spacedBy(NuvioTheme.spacing.xl)
+            contentPadding = PaddingValues(
+                bottom = if (dynamicHomeMode) dynamicBottomPadding else rowsViewportHeight
+            ),
+            verticalArrangement = Arrangement.spacedBy(
+                if (dynamicHomeMode) dynamicRowGap else NuvioTheme.spacing.xl
+            )
         ) {
             itemsIndexed(
                 items = carouselRows.list,
