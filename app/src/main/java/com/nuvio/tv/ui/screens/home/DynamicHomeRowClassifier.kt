@@ -95,13 +95,10 @@ internal object DynamicHomeRowClassifier {
         var alternatingRows = 0
 
         return rows.map { row ->
-            // Manual overrides apply even while a catalogue is loading or temporarily empty.
-            if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
-                return@map row.manualStyle
-            }
-
             if (row.itemCount < 1) {
-                return@map row.initialStyle
+                // Keep a user's choice visible even while a row is empty/loading.
+                return@map row.manualStyle.takeUnless { it == DynamicHomeRowStyle.AUTO }
+                    ?: row.initialStyle
             }
 
             val isCatalog = row.hasAddonBaseUrl &&
@@ -110,7 +107,6 @@ internal object DynamicHomeRowClassifier {
 
             // Legacy assigns the first non-empty addon catalogue to the 16:9
             // showcase during catalogue assembly, before dinAtribuirTipos runs.
-            // A manual style still wins, but the showcase slot remains consumed.
             val isContinueOrUpcoming =
                 row.key == CONTINUE_WATCHING_KEY || row.key == UPCOMING_KEY
 
@@ -121,6 +117,12 @@ internal object DynamicHomeRowClassifier {
                     row.initialStyle == DynamicHomeRowStyle.LANDSCAPE -> DynamicHomeRowStyle.LANDSCAPE
                     else -> DynamicHomeRowStyle.FEATURED
                 }
+            }
+
+            // Manual choice wins for every row, but does not rewrite the automatic
+            // counters once the first catalogue's showcase slot has been accounted for.
+            if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
+                return@map row.manualStyle
             }
 
             if (isContinueOrUpcoming) {
