@@ -154,8 +154,8 @@ fun ModernHomeContent(
     val sidebarExpanded = LocalSidebarExpanded.current
     val isSidebarExpanded = remember(sidebarExpanded) { derivedStateOf { sidebarExpanded } }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val useLandscapePosters = uiState.modernLandscapePostersEnabled
-    val alwaysShowLandscapeClearlogo = uiState.alwaysShowLandscapeClearlogo
+    val useLandscapePosters = if (dynamicHomeMode) false else uiState.modernLandscapePostersEnabled
+    val alwaysShowLandscapeClearlogo = !dynamicHomeMode && uiState.alwaysShowLandscapeClearlogo
     val fullScreenBackdrop = dynamicHomeMode || uiState.modernHeroFullScreenBackdropEnabled
     val trailerPlaybackTarget = uiState.focusedPosterBackdropTrailerPlaybackTarget
     val effectiveAutoplayEnabled =
@@ -680,32 +680,60 @@ fun ModernHomeContent(
         }
     }
 
+    val localConfiguration = LocalConfiguration.current
+    val screenWidth = localConfiguration.screenWidthDp.dp
+    val screenHeight = localConfiguration.screenHeightDp.dp
     val portraitBaseWidth = uiState.posterCardWidthDp.dp
     val portraitBaseHeight = uiState.posterCardHeightDp.dp
     val portraitModernPosterScale = 1.08f
     val landscapeModernPosterScale = 1.34f
-    val portraitCatalogCardWidth = portraitBaseWidth * 0.84f * portraitModernPosterScale
-    val portraitCatalogCardHeight = portraitBaseHeight * 0.84f * portraitModernPosterScale
-    val landscapeCatalogCardWidth = portraitBaseWidth * 1.24f * landscapeModernPosterScale
-    val landscapeCatalogCardHeight = landscapeCatalogCardWidth / 1.77f
-    // Poster style reuses the portrait catalog dimensions so its artwork matches the catalogs below it.
-    val continueWatchingStyle = uiState.continueWatchingCardStyle
+    // Legacy Dynamic dimensions are measured at 1920x1080. Scaling each axis
+    // independently keeps the reference geometry stable across TV densities.
+    val dynamicPortraitCardWidth = screenWidth * (212f / 1920f)
+    val dynamicPortraitCardHeight = screenHeight * (322f / 1080f)
+    val dynamicLandscapeCardWidth = screenWidth * (384f / 1920f)
+    val dynamicLandscapeCardHeight = screenHeight * (216f / 1080f)
+    val portraitCatalogCardWidth = if (dynamicHomeMode) {
+        dynamicPortraitCardWidth
+    } else {
+        portraitBaseWidth * 0.84f * portraitModernPosterScale
+    }
+    val portraitCatalogCardHeight = if (dynamicHomeMode) {
+        dynamicPortraitCardHeight
+    } else {
+        portraitBaseHeight * 0.84f * portraitModernPosterScale
+    }
+    val landscapeCatalogCardWidth = if (dynamicHomeMode) {
+        dynamicLandscapeCardWidth
+    } else {
+        portraitBaseWidth * 1.24f * landscapeModernPosterScale
+    }
+    val landscapeCatalogCardHeight = if (dynamicHomeMode) {
+        dynamicLandscapeCardHeight
+    } else {
+        landscapeCatalogCardWidth / 1.77f
+    }
+    // Legacy Continue Watching uses a dedicated 419x236 card.
+    val continueWatchingStyle = if (dynamicHomeMode) {
+        ContinueWatchingCardStyle.CARD
+    } else {
+        uiState.continueWatchingCardStyle
+    }
     val continueWatchingScale = 1.34f
-    val continueWatchingCardWidth = when (continueWatchingStyle) {
+    val continueWatchingCardWidth = if (dynamicHomeMode) {
+        screenWidth * (419f / 1920f)
+    } else when (continueWatchingStyle) {
         ContinueWatchingCardStyle.POSTER -> portraitCatalogCardWidth
-        // Wide still scales with the poster width setting so it matches the rest of the row.
         ContinueWatchingCardStyle.WIDE -> portraitBaseWidth * 2.1f
         ContinueWatchingCardStyle.CARD -> portraitBaseWidth * 1.24f * continueWatchingScale
     }
-    val continueWatchingCardHeight = when (continueWatchingStyle) {
+    val continueWatchingCardHeight = if (dynamicHomeMode) {
+        screenHeight * (236f / 1080f)
+    } else when (continueWatchingStyle) {
         ContinueWatchingCardStyle.POSTER -> portraitCatalogCardHeight
         ContinueWatchingCardStyle.WIDE -> continueWatchingCardWidth * WIDE_CARD_HEIGHT_RATIO
         ContinueWatchingCardStyle.CARD -> continueWatchingCardWidth / 1.77f
     }
-
-    val localConfiguration = LocalConfiguration.current
-    val screenWidth = localConfiguration.screenWidthDp.dp
-    val screenHeight = localConfiguration.screenHeightDp.dp
 
     Box(modifier = Modifier.fillMaxSize().background(NuvioTheme.colors.Background)) {
             val posterCardCornerRadius = remember(uiState.posterCardCornerRadiusDp) { uiState.posterCardCornerRadiusDp.dp }
