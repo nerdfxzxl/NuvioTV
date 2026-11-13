@@ -1077,6 +1077,7 @@ fun ModernHomeContent(
             }
             val rowsViewportHeight = remember(screenHeight, rowsViewportHeightFraction) { screenHeight * rowsViewportHeightFraction }
             val dynamicRowGap = remember(screenHeight) { screenHeight * (32f / 1080f) }
+            val dynamicTopPadding = remember(screenHeight) { screenHeight * (980f / 1080f) }
             val dynamicBottomPadding = remember(screenHeight) { screenHeight * (96f / 1080f) }
             val rowTitleLineHeight = MaterialTheme.typography.titleMedium.lineHeight
             val rowTitleHeight = remember(rowTitleLineHeight, localDensity) {
@@ -1325,6 +1326,7 @@ fun ModernHomeContent(
                 dynamicRowStyles = dynamicRowStyles,
                 dynamicHomeMode = dynamicHomeMode,
                 dynamicRowGap = dynamicRowGap,
+                dynamicTopPadding = dynamicTopPadding,
                 dynamicBottomPadding = dynamicBottomPadding,
                 isVerticalRowsScrollingState = isVerticalRowsScrollingState,
                 modifier = Modifier
