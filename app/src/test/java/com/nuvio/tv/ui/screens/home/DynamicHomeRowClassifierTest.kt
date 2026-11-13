@@ -190,6 +190,26 @@ class DynamicHomeRowClassifierTest {
     }
 
     @Test
+    fun manualStyleIsAppliedWhileCatalogIsEmptyOrLoading() {
+        val result = DynamicHomeRowClassifier.classify(
+            listOf(
+                DynamicHomeRowInput(
+                    key = "loading_catalog",
+                    title = "Movies",
+                    catalogId = "movies",
+                    hasAddonBaseUrl = true,
+                    hasCatalogIdentity = true,
+                    itemCount = 0,
+                    initialStyle = DynamicHomeRowStyle.PORTRAIT,
+                    manualStyle = DynamicHomeRowStyle.LANDSCAPE
+                )
+            )
+        )
+
+        assertEquals(listOf(DynamicHomeRowStyle.LANDSCAPE), result)
+    }
+
+    @Test
     fun manualStyleOverridesFeaturedAndDoesNotAdvanceAlternation() {
         val result = DynamicHomeRowClassifier.classify(
             listOf(
