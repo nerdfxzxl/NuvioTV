@@ -344,6 +344,71 @@ private fun DrawScope.drawModernLayoutPreview(
     }
 }
 
+/** Preview of Legacy Dynamic: portrait and landscape catalogue rows alternate. */
+@Composable
+fun DynamicLayoutPreview(
+    modifier: Modifier = Modifier,
+    accentColor: Color = NuvioTheme.colors.Primary,
+    animated: Boolean = true
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "dynamicPreview")
+    val scrollOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (animated) 1f else 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(5200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dynamicScroll"
+    )
+    LayoutPreviewFrame(modifier = modifier, background = NuvioTheme.colors.Background) {
+        drawDynamicLayoutPreview(scrollOffset, accentColor)
+    }
+}
+
+private fun DrawScope.drawDynamicLayoutPreview(
+    scrollOffset: Float,
+    accentColor: Color
+) {
+    val w = size.width
+    val h = size.height
+    val left = w * 0.045f
+    val titleHeight = h * 0.025f
+    val rowGap = h * 0.055f
+    val rowHeight = (h - titleHeight * 3f - rowGap * 4f) / 3f
+    val corner = CornerRadius(h * 0.018f)
+    val cardGap = w * 0.025f
+    val shift = scrollOffset * w * 0.18f
+
+    for (row in 0 until 3) {
+        val y = rowGap + row * (rowHeight + rowGap)
+        drawRoundRect(
+            color = accentColor.copy(alpha = 0.22f),
+            topLeft = Offset(left, y),
+            size = Size(w * 0.16f, titleHeight),
+            cornerRadius = CornerRadius(titleHeight * 0.4f)
+        )
+        val landscape = row == 1
+        val cardHeight = if (landscape) rowHeight * 0.62f else rowHeight * 0.88f
+        val cardWidth = if (landscape) cardHeight * 1.78f else cardHeight * 0.68f
+        val top = y + titleHeight + (rowHeight - cardHeight) * 0.5f
+        val step = cardWidth + cardGap
+        val count = (w / step).toInt() + 4
+        for (index in 0..count) {
+            val x = left + index * step - if (row == 1) shift else 0f
+            if (x + cardWidth > 0f && x < w) {
+                drawRoundRect(
+                    color = if (index % 3 == 1) accentColor.copy(alpha = 0.52f)
+                    else accentColor.copy(alpha = 0.31f),
+                    topLeft = Offset(x, top),
+                    size = Size(cardWidth, cardHeight),
+                    cornerRadius = corner
+                )
+            }
+        }
+    }
+}
+
 /** Static landscape Continue Watching style placeholder (single card, text on art). */
 @Composable
 fun CardCwStylePreview(
