@@ -1078,12 +1078,14 @@ fun ModernHomeContent(
             val rowsViewportHeight = remember(screenHeight, rowsViewportHeightFraction) { screenHeight * rowsViewportHeightFraction }
             val dynamicRowGap = remember(screenHeight) { screenHeight * (32f / 1080f) }
             val dynamicTopPadding = remember(screenHeight) { screenHeight * (980f / 1080f) }
+            val dynamicFirstRowFocusTop = remember(screenHeight) { screenHeight * (150f / 1080f) }
             val dynamicBottomPadding = remember(screenHeight) { screenHeight * (96f / 1080f) }
             val dynamicHeroFadeStart = remember(screenHeight) { screenHeight * (80f / 1080f) }
             val dynamicHeroFadeEnd = remember(screenHeight) { screenHeight * (560f / 1080f) }
             val dynamicHeroFadeProgress = remember(
                 verticalRowListState,
                 dynamicTopPadding,
+                dynamicFirstRowFocusTop,
                 dynamicHeroFadeStart,
                 dynamicHeroFadeEnd,
                 localDensity,
@@ -1125,14 +1127,25 @@ fun ModernHomeContent(
                 if (dynamicHomeMode) screenHeight
                 else (screenHeight - rowsViewportHeight + rowTitleHeight + 14.dp).coerceAtMost(screenHeight)
             }
-            val verticalRowBringIntoViewSpec = remember(localDensity, defaultBringIntoViewSpec, dynamicHomeMode) {
+            val verticalRowBringIntoViewSpec = remember(
+                localDensity,
+                defaultBringIntoViewSpec,
+                dynamicHomeMode,
+                focusState.focusedRowKey,
+                rowIndexByKey
+            ) {
                 if (dynamicHomeMode) {
                     @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
                     object : BringIntoViewSpec {
                         override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
                         override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
-                            val centeredLeadingEdge = (containerSize - size) * 0.5f
-                            val distance = offset - centeredLeadingEdge
+                            val focusedRowIndex = focusState.focusedRowKey?.let(rowIndexByKey::get)
+                            val targetLeadingEdge = if (focusedRowIndex == 0) {
+                                with(localDensity) { dynamicFirstRowFocusTop.toPx() }
+                            } else {
+                                (containerSize - size) * 0.5f
+                            }
+                            val distance = offset - targetLeadingEdge
                             if (distance < 0f && !verticalRowListState.canScrollBackward) return 0f
                             return distance
                         }
