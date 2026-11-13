@@ -156,7 +156,11 @@ fun ModernHomeContent(
     val lifecycleOwner = LocalLifecycleOwner.current
     val useLandscapePosters = if (dynamicHomeMode) false else uiState.modernLandscapePostersEnabled
     val alwaysShowLandscapeClearlogo = !dynamicHomeMode && uiState.alwaysShowLandscapeClearlogo
-    val fullScreenBackdrop = dynamicHomeMode || uiState.modernHeroFullScreenBackdropEnabled
+    val fullScreenBackdrop = if (dynamicHomeMode) {
+        uiState.heroSectionEnabled
+    } else {
+        uiState.modernHeroFullScreenBackdropEnabled
+    }
     val trailerPlaybackTarget = uiState.focusedPosterBackdropTrailerPlaybackTarget
     val effectiveAutoplayEnabled =
         uiState.focusedPosterBackdropTrailerEnabled &&
@@ -1077,7 +1081,9 @@ fun ModernHomeContent(
             }
             val rowsViewportHeight = remember(screenHeight, rowsViewportHeightFraction) { screenHeight * rowsViewportHeightFraction }
             val dynamicRowGap = remember(screenHeight) { screenHeight * (32f / 1080f) }
-            val dynamicTopPadding = remember(screenHeight) { screenHeight * (980f / 1080f) }
+            val dynamicTopPadding = remember(screenHeight, uiState.heroSectionEnabled) {
+                if (uiState.heroSectionEnabled) screenHeight * (980f / 1080f) else 0.dp
+            }
             val dynamicFirstRowFocusTop = remember(screenHeight) { screenHeight * (150f / 1080f) }
             val dynamicBottomPadding = remember(screenHeight) { screenHeight * (96f / 1080f) }
             val dynamicHeroFadeStart = remember(screenHeight) { screenHeight * (80f / 1080f) }
@@ -1089,10 +1095,11 @@ fun ModernHomeContent(
                 dynamicHeroFadeStart,
                 dynamicHeroFadeEnd,
                 localDensity,
-                dynamicHomeMode
+                dynamicHomeMode,
+                uiState.heroSectionEnabled
             ) {
                 derivedStateOf {
-                    if (!dynamicHomeMode) {
+                    if (!dynamicHomeMode || !uiState.heroSectionEnabled) {
                         1f
                     } else {
                         val firstVisibleItem = verticalRowListState.layoutInfo.visibleItemsInfo.firstOrNull()
@@ -1220,15 +1227,17 @@ fun ModernHomeContent(
             }
             val onFirstFrameRenderedLambda = remember { { heroTrailerFirstFrameRendered = true } }
 
-            ModernHeroSection(
-                heroSceneState = heroSceneStateLambda,
-                isFullScreen = isFullScreenLambda,
-                heroMediaWidthPx = heroMediaWidthPx,
-                heroMediaHeightPx = heroMediaHeightPx,
-                modifier = heroMediaModifier,
-                onTrailerEnded = onTrailerEndedLambda,
-                onFirstFrameRendered = onFirstFrameRenderedLambda
-            )
+            if (!dynamicHomeMode || uiState.heroSectionEnabled) {
+                ModernHeroSection(
+                    heroSceneState = heroSceneStateLambda,
+                    isFullScreen = isFullScreenLambda,
+                    heroMediaWidthPx = heroMediaWidthPx,
+                    heroMediaHeightPx = heroMediaHeightPx,
+                    modifier = heroMediaModifier,
+                    onTrailerEnded = onTrailerEndedLambda,
+                    onFirstFrameRendered = onFirstFrameRenderedLambda
+                )
+            }
 
             // Fade content rows when ANY hero media (catalog trailer or collection
             // hero video) is playing in fullscreen — not just catalog trailers.
@@ -1253,8 +1262,9 @@ fun ModernHomeContent(
                     .fillMaxWidth(MODERN_HERO_TEXT_WIDTH_FRACTION)
             }
 
-            HeroTitleBlock(
-                previewProvider = {
+            if (!dynamicHomeMode || uiState.heroSectionEnabled) {
+                HeroTitleBlock(
+                    previewProvider = {
                     val state = heroSceneStateLambda()
                     if (isRapidHorizontalNav.value || state.enrichmentActive) null
                     else state.preview
@@ -1275,8 +1285,9 @@ fun ModernHomeContent(
                     }
                 },
                 descriptionAutoScrollEnabled = uiState.heroDescriptionAutoScrollEnabled,
-                modifier = heroMetadataModifier
-            )
+                    modifier = heroMetadataModifier
+                )
+            }
 
             val latestOnFocusedRowKeyChanged by rememberUpdatedState(onFocusedRowKeyChanged)
             val onActiveRowKeyChangeLambda = remember {
