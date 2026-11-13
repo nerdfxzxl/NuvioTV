@@ -149,6 +149,7 @@ internal fun ModernHomeRowsList(
     dynamicRowStyles: Map<String, String> = emptyMap(),
     dynamicHomeMode: Boolean = false,
     dynamicRowGap: Dp = 24.dp,
+    dynamicTopPadding: Dp = 0.dp,
     dynamicBottomPadding: Dp = 96.dp,
     modifier: Modifier = Modifier
 ) {
@@ -368,6 +369,7 @@ internal fun ModernHomeRowsList(
                     },
                 ),
             contentPadding = PaddingValues(
+                top = if (dynamicHomeMode) dynamicTopPadding else 0.dp,
                 bottom = if (dynamicHomeMode) dynamicBottomPadding else rowsViewportHeight
             ),
             verticalArrangement = Arrangement.spacedBy(
