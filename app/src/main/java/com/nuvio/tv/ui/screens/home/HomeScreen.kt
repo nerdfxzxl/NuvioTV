@@ -714,7 +714,10 @@ private fun ModernHomeRoute(
                     catalogId = row.catalogId,
                     hasAddonBaseUrl = !catalogPayload?.addonBaseUrl.isNullOrBlank(),
                     hasCatalogIdentity = !row.catalogId.isNullOrBlank() && !row.addonId.isNullOrBlank(),
-                    itemCount = row.items.list.size,
+                    itemCount = if (row.isLoading) 0 else row.items.list.count { item ->
+                        val payload = item.payload
+                        payload is ModernPayload.Catalog && !payload.itemId.startsWith("__placeholder_")
+                    },
                     initialStyle = initialStyle,
                     manualStyle = manualStyle
                 )
