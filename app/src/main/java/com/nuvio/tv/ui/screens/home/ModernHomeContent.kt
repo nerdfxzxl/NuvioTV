@@ -1096,9 +1096,12 @@ fun ModernHomeContent(
                         1f
                     } else {
                         val firstVisibleItem = verticalRowListState.layoutInfo.visibleItemsInfo.firstOrNull()
-                        val scrollDistance = firstVisibleItem?.let { item ->
-                            with(localDensity) { dynamicTopPadding.toPx() } - item.offset
-                        } ?: 0f
+                        val scrollDistance = when {
+                            verticalRowListState.firstVisibleItemIndex > 0 -> Float.POSITIVE_INFINITY
+                            firstVisibleItem != null ->
+                                with(localDensity) { dynamicTopPadding.toPx() } - firstVisibleItem.offset
+                            else -> 0f
+                        }
                         val fadeStartPx = with(localDensity) { dynamicHeroFadeStart.toPx() }
                         val fadeEndPx = with(localDensity) { dynamicHeroFadeEnd.toPx() }
                         1f - ((scrollDistance - fadeStartPx) / (fadeEndPx - fadeStartPx))
