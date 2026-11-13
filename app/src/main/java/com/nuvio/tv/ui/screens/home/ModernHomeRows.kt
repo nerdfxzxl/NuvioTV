@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,6 +62,7 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.focus.focusRestorer
@@ -88,6 +90,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -247,6 +250,7 @@ private fun ModernCatalogRowItem(
     expandedTrailerPreviewUrl: () -> String?,
     expandedTrailerPreviewAudioUrl: () -> String?,
     isCatalogItemWatched: (MetaPreview) -> Boolean,
+    dynamicRowStyle: String? = null,
     isFocusTarget: Boolean = false,
     onFocused: () -> Unit,
     onItemFocus: (MetaPreview) -> Unit,
@@ -377,6 +381,21 @@ private fun ModernCatalogRowItem(
             landscapeCardHeight = landscapeCatalogCardHeight
         )
     }
+    val localConfiguration = LocalConfiguration.current
+    val dynamicFeaturedWidth = localConfiguration.screenWidthDp.dp * (640f / 1920f)
+    val dynamicFeaturedHeight = localConfiguration.screenHeightDp.dp * (360f / 1080f)
+    val dynamicFeaturedSquareWidth = localConfiguration.screenWidthDp.dp * (540f / 1920f)
+    val dynamicFeaturedSquareHeight = localConfiguration.screenHeightDp.dp * (405f / 1080f)
+    val renderedCardWidth = when (dynamicRowStyle) {
+        "FEATURED" -> dynamicFeaturedWidth
+        "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareWidth
+        else -> cardMetrics.width
+    }
+    val renderedCardHeight = when (dynamicRowStyle) {
+        "FEATURED" -> dynamicFeaturedHeight
+        "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareHeight
+        else -> cardMetrics.height
+    }
 
     ModernCarouselCard(
         item = item,
@@ -385,8 +404,8 @@ private fun ModernCatalogRowItem(
         showLabels = showLabels,
         placeholderShimmerOffsetState = placeholderShimmerOffsetState,
         cardCornerRadius = posterCardCornerRadius,
-        cardWidth = cardMetrics.width,
-        cardHeight = cardMetrics.height,
+        cardWidth = renderedCardWidth,
+        cardHeight = renderedCardHeight,
         modifier = modifier,
         focusedPosterBackdropExpandEnabled = effectiveExpandEnabled,
         isBackdropExpanded = effectiveBackdropExpanded,
@@ -497,7 +516,8 @@ internal fun ModernRowSection(
     val rowKey = row.key
     val rowUseLandscapePosters = when (dynamicRowStyle) {
         "PORTRAIT" -> false
-        "LANDSCAPE" -> true
+        "LANDSCAPE", "FEATURED" -> true
+        "PORTRAIT", "TOP_10_NUMBERED" -> false
         else -> useLandscapePosters
     }
 
@@ -1021,6 +1041,31 @@ internal fun ModernRowSection(
                             Box(modifier = if (placeholderFocusBlock) {
                                 Modifier.focusProperties { canFocus = false }
                             } else Modifier) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (dynamicRowStyle == "TOP_10_NUMBERED") {
+                                val configuration = LocalConfiguration.current
+                                val numberWidth = configuration.screenWidthDp.dp * (138f / 1920f)
+                                val numberFontSize = (configuration.screenHeightDp * 0.17f).sp
+                                Box(
+                                    modifier = Modifier
+                                        .width(numberWidth)
+                                        .height(portraitCatalogCardHeight)
+                                        .zIndex(0.5f),
+                                    contentAlignment = Alignment.BottomCenter
+                                ) {
+                                    Text(
+                                        text = (index + 1).toString(),
+                                        modifier = Modifier.padding(bottom = portraitCatalogCardHeight * 0.10f),
+                                        color = Color.White.copy(alpha = 0.86f),
+                                        fontSize = if (index >= 9) numberFontSize * 0.78f else numberFontSize,
+                                        fontWeight = FontWeight.Black,
+                                        textAlign = TextAlign.Center,
+                                        maxLines = 1,
+                                        softWrap = false,
+                                        overflow = TextOverflow.Visible
+                                    )
+                                }
+                            }
                             ModernCatalogRowItem(
                                 item = item,
                                 payload = payload,
@@ -1043,6 +1088,7 @@ internal fun ModernRowSection(
                                 landscapeCatalogCardWidth = landscapeCatalogCardWidth,
                                 landscapeCatalogCardHeight = landscapeCatalogCardHeight,
                                 isCatalogItemWatched = isCatalogItemWatched,
+                                dynamicRowStyle = dynamicRowStyle,
                                 onFocused = onFocused,
                                 onItemFocus = onItemFocus,
                                 onPreloadAdjacentItem = remember(nextCatalogItem, prevCatalogItem, onPreloadAdjacentItem) {
@@ -1060,6 +1106,7 @@ internal fun ModernRowSection(
                                 enrichedPreviews = enrichedPreviews
                             )
                             } // Box
+                            } // Row
                         }
                     }
                 }
