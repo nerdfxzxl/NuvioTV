@@ -391,6 +391,8 @@ private fun ModernCatalogRowItem(
     val dynamicCollectionHeight = LocalConfiguration.current.screenHeightDp.dp * (270f / 1080f)
     val dynamicServiceWidth = LocalConfiguration.current.screenWidthDp.dp * (360f / 1920f)
     val dynamicServiceHeight = LocalConfiguration.current.screenHeightDp.dp * (203f / 1080f)
+    val dynamicSocialWidth = LocalConfiguration.current.screenWidthDp.dp * (540f / 1920f)
+    val dynamicSocialHeight = LocalConfiguration.current.screenHeightDp.dp * (312f / 1080f)
     val dynamicReturnWidth = LocalConfiguration.current.screenWidthDp.dp * (680f / 1920f)
     val dynamicReturnHeight = LocalConfiguration.current.screenHeightDp.dp * (178f / 1080f)
     val dynamicFeaturedWidth = LocalConfiguration.current.screenWidthDp.dp * (640f / 1920f)
@@ -399,7 +401,8 @@ private fun ModernCatalogRowItem(
     val dynamicFeaturedSquareHeight = LocalConfiguration.current.screenHeightDp.dp * (405f / 1080f)
     val renderedCardWidth = when (dynamicRowStyle) {
         "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitWidth
-        "LANDSCAPE", "SOCIAL" -> dynamicLandscapeWidth
+        "LANDSCAPE" -> dynamicLandscapeWidth
+        "SOCIAL" -> dynamicSocialWidth
         "COLLECTION" -> dynamicCollectionWidth
         "SERVICE", "CATALOG_SHORTCUTS" -> dynamicServiceWidth
         "RETURN" -> dynamicReturnWidth
@@ -409,7 +412,8 @@ private fun ModernCatalogRowItem(
     }
     val renderedCardHeight = when (dynamicRowStyle) {
         "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitHeight
-        "LANDSCAPE", "SOCIAL" -> dynamicLandscapeHeight
+        "LANDSCAPE" -> dynamicLandscapeHeight
+        "SOCIAL" -> dynamicSocialHeight
         "COLLECTION" -> dynamicCollectionHeight
         "SERVICE", "CATALOG_SHORTCUTS" -> dynamicServiceHeight
         "RETURN" -> dynamicReturnHeight
