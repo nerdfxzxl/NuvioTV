@@ -74,7 +74,7 @@ internal object DynamicHomeRowClassifier {
                 return@map row.manualStyle
             }
 
-            if (row.itemCount < 1 || row.initialStyle != DynamicHomeRowStyle.PORTRAIT) {
+            if (row.itemCount < 1) {
                 return@map row.initialStyle
             }
 
@@ -85,7 +85,17 @@ internal object DynamicHomeRowClassifier {
             val isCatalog = row.hasCatalogIdentity &&
                 !row.catalogId.isNullOrBlank()
 
-            if (isCatalog &&
+            if (row.initialStyle == DynamicHomeRowStyle.TOP_10_STACKED && isCatalog) {
+                if (numberedRankingAssigned < 1) {
+                    numberedRankingAssigned++
+                    DynamicHomeRowStyle.TOP_10_NUMBERED
+                } else {
+                    alternatingRows = 1
+                    DynamicHomeRowStyle.PORTRAIT
+                }
+            } else if (row.initialStyle != DynamicHomeRowStyle.PORTRAIT) {
+                row.initialStyle
+            } else if (isCatalog &&
                 numberedRankingAssigned < 1 &&
                 row.itemCount >= MIN_NUMBERED_RANKING_ITEMS &&
                 isRecognisedRanking(row)
@@ -98,12 +108,11 @@ internal object DynamicHomeRowClassifier {
                 alternatingRows = 1
                 DynamicHomeRowStyle.PORTRAIT
             } else {
-                val style = if ((alternatingRows++ and 1) == 1) {
+                if ((alternatingRows++ and 1) == 1) {
                     DynamicHomeRowStyle.LANDSCAPE
                 } else {
                     DynamicHomeRowStyle.PORTRAIT
                 }
-                style
             }
         }
     }
