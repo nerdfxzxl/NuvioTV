@@ -387,22 +387,32 @@ private fun ModernCatalogRowItem(
     val dynamicPortraitHeight = LocalConfiguration.current.screenHeightDp.dp * (322f / 1080f)
     val dynamicLandscapeWidth = LocalConfiguration.current.screenWidthDp.dp * (384f / 1920f)
     val dynamicLandscapeHeight = LocalConfiguration.current.screenHeightDp.dp * (216f / 1080f)
+    val dynamicCollectionWidth = LocalConfiguration.current.screenWidthDp.dp * (480f / 1920f)
+    val dynamicCollectionHeight = LocalConfiguration.current.screenHeightDp.dp * (270f / 1080f)
+    val dynamicServiceWidth = LocalConfiguration.current.screenWidthDp.dp * (360f / 1920f)
+    val dynamicServiceHeight = LocalConfiguration.current.screenHeightDp.dp * (203f / 1080f)
+    val dynamicReturnWidth = LocalConfiguration.current.screenWidthDp.dp * (680f / 1920f)
+    val dynamicReturnHeight = LocalConfiguration.current.screenHeightDp.dp * (178f / 1080f)
     val dynamicFeaturedWidth = LocalConfiguration.current.screenWidthDp.dp * (640f / 1920f)
     val dynamicFeaturedHeight = LocalConfiguration.current.screenHeightDp.dp * (360f / 1080f)
     val dynamicFeaturedSquareWidth = LocalConfiguration.current.screenWidthDp.dp * (540f / 1920f)
     val dynamicFeaturedSquareHeight = LocalConfiguration.current.screenHeightDp.dp * (405f / 1080f)
     val renderedCardWidth = when (dynamicRowStyle) {
         "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitWidth
-        "LANDSCAPE", "COLLECTION", "SERVICE", "SOCIAL", "RETURN", "CATALOG_SHORTCUTS" ->
-            dynamicLandscapeWidth
+        "LANDSCAPE", "SOCIAL" -> dynamicLandscapeWidth
+        "COLLECTION" -> dynamicCollectionWidth
+        "SERVICE", "CATALOG_SHORTCUTS" -> dynamicServiceWidth
+        "RETURN" -> dynamicReturnWidth
         "FEATURED" -> dynamicFeaturedWidth
         "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareWidth
         else -> cardMetrics.width
     }
     val renderedCardHeight = when (dynamicRowStyle) {
         "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitHeight
-        "LANDSCAPE", "COLLECTION", "SERVICE", "SOCIAL", "RETURN", "CATALOG_SHORTCUTS" ->
-            dynamicLandscapeHeight
+        "LANDSCAPE", "SOCIAL" -> dynamicLandscapeHeight
+        "COLLECTION" -> dynamicCollectionHeight
+        "SERVICE", "CATALOG_SHORTCUTS" -> dynamicServiceHeight
+        "RETURN" -> dynamicReturnHeight
         "FEATURED" -> dynamicFeaturedHeight
         "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareHeight
         else -> cardMetrics.height
