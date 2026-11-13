@@ -1,5 +1,8 @@
 <resources>
     <string name="app_name">Nuvio</string>
+    <string name="nerd_fazal_settings_title">Nerd Fazal Settings</string>
+    <string name="nerd_fazal_settings_subtitle">Your custom Nuvio features and personalisations</string>
+    <string name="nerd_fazal_settings_intro">A dedicated home for custom features. Dynamic Home row controls and custom playback and interface options will be organised here as they are implemented.</string>
     <string name="tv_channel_continue_watching">Continue Watching</string>
     <string name="type_movie">Movie</string>
     <string name="type_movies">Movies</string>
