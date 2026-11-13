@@ -393,14 +393,16 @@ private fun ModernCatalogRowItem(
     val dynamicFeaturedSquareHeight = LocalConfiguration.current.screenHeightDp.dp * (405f / 1080f)
     val renderedCardWidth = when (dynamicRowStyle) {
         "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitWidth
-        "LANDSCAPE" -> dynamicLandscapeWidth
+        "LANDSCAPE", "COLLECTION", "SERVICE", "SOCIAL", "RETURN", "CATALOG_SHORTCUTS" ->
+            dynamicLandscapeWidth
         "FEATURED" -> dynamicFeaturedWidth
         "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareWidth
         else -> cardMetrics.width
     }
     val renderedCardHeight = when (dynamicRowStyle) {
         "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitHeight
-        "LANDSCAPE" -> dynamicLandscapeHeight
+        "LANDSCAPE", "COLLECTION", "SERVICE", "SOCIAL", "RETURN", "CATALOG_SHORTCUTS" ->
+            dynamicLandscapeHeight
         "FEATURED" -> dynamicFeaturedHeight
         "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareHeight
         else -> cardMetrics.height
@@ -533,8 +535,10 @@ internal fun ModernRowSection(
         52.dp
     }
     val rowUseLandscapePosters = when (dynamicRowStyle) {
-        "PORTRAIT", "TOP_10_NUMBERED" -> false
-        "LANDSCAPE", "FEATURED", "FEATURED_SQUARE", "LARGE_4_3" -> true
+        "PORTRAIT", "POSTER", "TOP_10_NUMBERED", "LARGE_POSTER", "LARGE_POSTER_SMALL",
+        "LARGE_POSTER_LARGE" -> false
+        "LANDSCAPE", "FEATURED", "FEATURED_SQUARE", "LARGE_4_3",
+        "COLLECTION", "SERVICE", "SOCIAL", "RETURN", "CATALOG_SHORTCUTS" -> true
         else -> useLandscapePosters
     }
 
