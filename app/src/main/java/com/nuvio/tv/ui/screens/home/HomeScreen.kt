@@ -698,8 +698,12 @@ private fun ModernHomeRoute(
                 val initialStyle = when {
                     row.key == MODERN_CONTINUE_WATCHING_ROW_KEY ||
                         row.key == MODERN_UPCOMING_ROW_KEY -> DynamicHomeRowStyle.CONTINUE_WATCHING
-                    firstPayload is ModernPayload.CollectionFolder -> DynamicHomeRowStyle.COLLECTION
-                    else -> DynamicHomeRowStyle.PORTRAIT
+                    row.key == "social_activity" -> DynamicHomeRowStyle.SOCIAL
+                    row.key == "last_session" -> DynamicHomeRowStyle.RETURN
+                    firstPayload is ModernPayload.CollectionFolder -> DynamicHomeRowStyle.CATALOG_SHORTCUTS
+                    row.apiType in setOf("channel", "tv", "channels", "live", "iptv") ->
+                        DynamicHomeRowStyle.LANDSCAPE
+                    else -> DynamicHomeRowClassifier.initialStyleForCatalog(row.title)
                 }
                 val manualStyle = uiState.dynamicHomeRowStyles[row.key]
                     ?.let { name -> runCatching { DynamicHomeRowStyle.valueOf(name) }.getOrDefault(DynamicHomeRowStyle.AUTO) }
