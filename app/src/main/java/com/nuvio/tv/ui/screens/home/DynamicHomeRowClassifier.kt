@@ -73,13 +73,45 @@ internal object DynamicHomeRowClassifier {
      * - later recognised rankings stay portrait and advance the cycle;
      * - ordinary rows alternate portrait, landscape, starting with portrait.
      */
+    fun initialStyleForCatalog(title: String): DynamicHomeRowStyle {
+        val normalized = normalize(title)
+        return when {
+            listOf("top 100", "top100", "top 10", "top10").any(normalized::contains) ->
+                DynamicHomeRowStyle.TOP_10_STACKED
+            listOf("saga", "franquia", "franchise", "filmograf", "timeline", "cronolog", "linha do tempo")
+                .any(normalized::contains) -> DynamicHomeRowStyle.TIMELINE
+            listOf("oscar", "academy", "award", "premia", "cannes", "golden globe")
+                .any(normalized::contains) -> DynamicHomeRowStyle.COLLECTION
+            listOf("netflix", "disney", "prime video", "amazon", "apple tv", "hbo", "max -", "paramount", "globoplay", "mubi", "crunchyroll")
+                .any(normalized::contains) -> DynamicHomeRowStyle.SERVICE
+            else -> DynamicHomeRowStyle.PORTRAIT
+        }
+    }
+
     fun classify(rows: List<DynamicHomeRowInput>): List<DynamicHomeRowStyle> {
+        var featuredAssigned = false
         var numberedRankingAssigned = 0
         var alternatingRows = 0
 
         return rows.map { row ->
             if (row.itemCount < 1) {
                 return@map row.initialStyle
+            }
+
+            val isCatalog = row.hasAddonBaseUrl &&
+                row.hasCatalogIdentity &&
+                !row.catalogId.isNullOrBlank()
+
+            // Legacy assigns the first non-empty addon catalogue to the 16:9
+            // showcase during catalogue assembly, before dinAtribuirTipos runs.
+            // A manual style still wins, but the showcase slot remains consumed.
+            if (!featuredAssigned && isCatalog) {
+                featuredAssigned = true
+                return@map if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
+                    row.manualStyle
+                } else {
+                    DynamicHomeRowStyle.FEATURED
+                }
             }
 
             if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
@@ -89,10 +121,6 @@ internal object DynamicHomeRowClassifier {
             if (row.key == CONTINUE_WATCHING_KEY || row.key == UPCOMING_KEY) {
                 return@map row.initialStyle
             }
-
-            val isCatalog = row.hasAddonBaseUrl &&
-                row.hasCatalogIdentity &&
-                !row.catalogId.isNullOrBlank()
 
             if (row.initialStyle == DynamicHomeRowStyle.TOP_10_STACKED && isCatalog) {
                 if (numberedRankingAssigned < 1) {
