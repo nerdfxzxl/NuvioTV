@@ -88,6 +88,17 @@ private data class ModernLayoutPrefs(
 
 @OptIn(FlowPreview::class)
 internal fun HomeViewModel.observeLayoutPreferencesPipeline() {
+    viewModelScope.launch {
+        layoutPreferenceDataStore.dynamicHomeRowStyles
+            .distinctUntilChanged()
+            .collectLatest { styles ->
+                _uiState.update { state ->
+                    if (state.dynamicHomeRowStyles == styles) state
+                    else state.copy(dynamicHomeRowStyles = styles)
+                }
+            }
+    }
+
     val coreLayoutPrefsFlow = combine(
         combine(
             layoutPreferenceDataStore.selectedLayout,
