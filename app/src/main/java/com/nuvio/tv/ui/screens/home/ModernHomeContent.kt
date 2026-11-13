@@ -1062,8 +1062,8 @@ fun ModernHomeContent(
                 else (screenHeight - rowsViewportHeight + rowTitleHeight + 14.dp).coerceAtMost(screenHeight)
             }
             val verticalRowBringIntoViewSpec = remember(localDensity, defaultBringIntoViewSpec, dynamicHomeMode) {
-                @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
                 if (dynamicHomeMode) {
+                    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
                     object : BringIntoViewSpec {
                         override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
                         override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
@@ -1075,6 +1075,7 @@ fun ModernHomeContent(
                     }
                 } else {
                     val topInsetPx = with(localDensity) { MODERN_ROW_HEADER_FOCUS_INSET.toPx() }
+                    @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
                     object : BringIntoViewSpec {
                         override val scrollAnimationSpec: AnimationSpec<Float> = defaultBringIntoViewSpec.scrollAnimationSpec
                         override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
