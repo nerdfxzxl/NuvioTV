@@ -438,7 +438,11 @@ internal fun ModernHomeRowsList(
                     dynamicRowStyle = dynamicRowStyles[row.key],
                     isActiveRow = isActiveRowLambda,
                     rowFocusRequester = rowFocusRequesters.getOrPut(row.key) { FocusRequester() },
-                    rowTitleBottom = 14.dp, // rowTitleBottom
+                    rowTitleBottom = if (dynamicHomeMode) {
+                        LocalConfiguration.current.screenHeightDp.dp * (34f / 1080f)
+                    } else {
+                        14.dp
+                    },
                     defaultBringIntoViewSpec = defaultBringIntoViewSpec,
                     focusStateCatalogRowScrollIndex = focusState.catalogRowScrollStates[row.key] ?: 0,
                     focusStateCatalogRowScrollAnchor = focusState.catalogRowScrollAnchors[row.key],
