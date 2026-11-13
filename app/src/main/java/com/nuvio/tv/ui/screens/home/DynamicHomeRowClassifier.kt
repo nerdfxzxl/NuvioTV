@@ -95,6 +95,11 @@ internal object DynamicHomeRowClassifier {
         var alternatingRows = 0
 
         return rows.map { row ->
+            // Manual overrides apply even while a catalogue is loading or temporarily empty.
+            if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
+                return@map row.manualStyle
+            }
+
             if (row.itemCount < 1) {
                 return@map row.initialStyle
             }
@@ -116,10 +121,6 @@ internal object DynamicHomeRowClassifier {
                     row.initialStyle == DynamicHomeRowStyle.LANDSCAPE -> DynamicHomeRowStyle.LANDSCAPE
                     else -> DynamicHomeRowStyle.FEATURED
                 }
-            }
-
-            if (row.manualStyle != DynamicHomeRowStyle.AUTO) {
-                return@map row.manualStyle
             }
 
             if (isContinueOrUpcoming) {
