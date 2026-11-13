@@ -230,6 +230,7 @@ fun SettingsScreen(
             SettingsCategory.APPEARANCE to FocusRequester(),
             SettingsCategory.EXPERIENCE to FocusRequester(),
             SettingsCategory.PROFILES to FocusRequester(),
+            SettingsCategory.NERD_FAZAL to FocusRequester(),
             SettingsCategory.WATCH_PARTY to FocusRequester(),
             SettingsCategory.LAYOUT to FocusRequester(),
             SettingsCategory.CONTENT_DISCOVERY to FocusRequester(),
@@ -871,7 +872,13 @@ private fun SettingsDetailPane(
                 null
             }
         )
-        SettingsCategory.NERD_FAZAL -> NerdFazalSettingsContent()
+        SettingsCategory.NERD_FAZAL -> NerdFazalSettingsContent(
+            initialFocusRequester = if (allowDetailAutofocus) {
+                contentFocusRequesters[SettingsCategory.NERD_FAZAL]
+            } else {
+                null
+            }
+        )
         SettingsCategory.WATCH_PARTY -> PartySettingsContent(
             onOpen = onNavigateToWatchParty,
             initialFocusRequester = if (allowDetailAutofocus) {
