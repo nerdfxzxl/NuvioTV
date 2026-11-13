@@ -16,21 +16,34 @@ class DynamicHomeRowClassifierTest {
         hasAddonBaseUrl = true,
         hasCatalogIdentity = true,
         itemCount = count,
+        initialStyle = DynamicHomeRowClassifier.initialStyleForCatalog(title),
         manualStyle = manual
     )
 
     @Test
-    fun ordinaryCatalogRowsAlternateStartingWithPortrait() {
+    fun firstEligibleAddonCatalogBecomesFeaturedBeforeAlternation() {
         val result = DynamicHomeRowClassifier.classify(
-            listOf(catalog("Movies"), catalog("Series"), catalog("Anime"), catalog("Documentaries"))
+            listOf(
+                DynamicHomeRowInput(
+                    key = "continue_watching",
+                    title = "Continue Watching",
+                    itemCount = 4,
+                    initialStyle = DynamicHomeRowStyle.CONTINUE_WATCHING
+                ),
+                catalog("Movies"),
+                catalog("Series"),
+                catalog("Anime"),
+                catalog("Documentaries")
+            )
         )
 
         assertEquals(
             listOf(
+                DynamicHomeRowStyle.CONTINUE_WATCHING,
+                DynamicHomeRowStyle.FEATURED,
                 DynamicHomeRowStyle.PORTRAIT,
                 DynamicHomeRowStyle.LANDSCAPE,
-                DynamicHomeRowStyle.PORTRAIT,
-                DynamicHomeRowStyle.LANDSCAPE
+                DynamicHomeRowStyle.PORTRAIT
             ),
             result
         )
@@ -44,12 +57,14 @@ class DynamicHomeRowClassifierTest {
                 DynamicHomeRowInput(
                     key = "continue_watching",
                     title = "Continue Watching",
-                    itemCount = 4
+                    itemCount = 4,
+                    initialStyle = DynamicHomeRowStyle.CONTINUE_WATCHING
                 ),
                 DynamicHomeRowInput(
                     key = "upcoming_section",
                     title = "Upcoming",
-                    itemCount = 3
+                    itemCount = 3,
+                    initialStyle = DynamicHomeRowStyle.CONTINUE_WATCHING
                 ),
                 catalog("Series")
             )
@@ -57,26 +72,26 @@ class DynamicHomeRowClassifierTest {
 
         assertEquals(
             listOf(
-                DynamicHomeRowStyle.PORTRAIT,
-                DynamicHomeRowStyle.PORTRAIT,
-                DynamicHomeRowStyle.PORTRAIT,
-                DynamicHomeRowStyle.LANDSCAPE
+                DynamicHomeRowStyle.FEATURED,
+                DynamicHomeRowStyle.CONTINUE_WATCHING,
+                DynamicHomeRowStyle.CONTINUE_WATCHING,
+                DynamicHomeRowStyle.PORTRAIT
             ),
             result
         )
     }
 
     @Test
-    fun firstRecognisedRankingWithFiveItemsGetsNumberedTopTen() {
+    fun firstRankingAfterFeaturedRowGetsNumberedTopTen() {
         val result = DynamicHomeRowClassifier.classify(
             listOf(catalog("Movies"), catalog("Top 10 Movies", count = 5), catalog("Series"))
         )
 
         assertEquals(
             listOf(
-                DynamicHomeRowStyle.PORTRAIT,
+                DynamicHomeRowStyle.FEATURED,
                 DynamicHomeRowStyle.TOP_10_NUMBERED,
-                DynamicHomeRowStyle.LANDSCAPE
+                DynamicHomeRowStyle.PORTRAIT
             ),
             result
         )
@@ -98,7 +113,7 @@ class DynamicHomeRowClassifierTest {
         )
 
         assertEquals(
-            listOf(DynamicHomeRowStyle.PORTRAIT, DynamicHomeRowStyle.LANDSCAPE),
+            listOf(DynamicHomeRowStyle.PORTRAIT, DynamicHomeRowStyle.FEATURED),
             result
         )
     }
@@ -109,9 +124,9 @@ class DynamicHomeRowClassifierTest {
 
         assertEquals(
             listOf(
+                DynamicHomeRowStyle.FEATURED,
                 DynamicHomeRowStyle.TOP_10_NUMBERED,
-                DynamicHomeRowStyle.PORTRAIT,
-                DynamicHomeRowStyle.LANDSCAPE
+                DynamicHomeRowStyle.PORTRAIT
             ),
             result
         )
@@ -125,7 +140,7 @@ class DynamicHomeRowClassifierTest {
 
         assertEquals(
             listOf(
-                DynamicHomeRowStyle.PORTRAIT,
+                DynamicHomeRowStyle.FEATURED,
                 DynamicHomeRowStyle.TOP_10_NUMBERED
             ),
             result
@@ -136,6 +151,7 @@ class DynamicHomeRowClassifierTest {
     fun laterRecognisedRankingStaysPortraitAndAdvancesAlternation() {
         val result = DynamicHomeRowClassifier.classify(
             listOf(
+                catalog("Movies"),
                 catalog("Top 10 Movies"),
                 catalog("Trending Series"),
                 catalog("Documentaries")
@@ -144,6 +160,7 @@ class DynamicHomeRowClassifierTest {
 
         assertEquals(
             listOf(
+                DynamicHomeRowStyle.FEATURED,
                 DynamicHomeRowStyle.TOP_10_NUMBERED,
                 DynamicHomeRowStyle.PORTRAIT,
                 DynamicHomeRowStyle.LANDSCAPE
@@ -153,7 +170,7 @@ class DynamicHomeRowClassifierTest {
     }
 
     @Test
-    fun manualStyleOverridesAutomaticClassification() {
+    fun manualStyleOverridesFeaturedAndDoesNotAdvanceAlternation() {
         val result = DynamicHomeRowClassifier.classify(
             listOf(
                 catalog("Movies", manual = DynamicHomeRowStyle.LANDSCAPE),
@@ -171,19 +188,31 @@ class DynamicHomeRowClassifierTest {
     }
 
     @Test
-    fun rankingTermMustStartAtAWordBoundary() {
-        val result = DynamicHomeRowClassifier.classify(
-            listOf(catalog("Christopher Nolan"), catalog("Popular Movies"))
-        )
-
+    fun catalogProfileDetectionMatchesLegacySpecialNames() {
         assertEquals(
-            listOf(DynamicHomeRowStyle.PORTRAIT, DynamicHomeRowStyle.LANDSCAPE),
-            result
+            DynamicHomeRowStyle.TOP_10_STACKED,
+            DynamicHomeRowClassifier.initialStyleForCatalog("Top 100 · Movies")
+        )
+        assertEquals(
+            DynamicHomeRowStyle.TIMELINE,
+            DynamicHomeRowClassifier.initialStyleForCatalog("The Saga Collection")
+        )
+        assertEquals(
+            DynamicHomeRowStyle.COLLECTION,
+            DynamicHomeRowClassifier.initialStyleForCatalog("Oscar Winners")
+        )
+        assertEquals(
+            DynamicHomeRowStyle.SERVICE,
+            DynamicHomeRowClassifier.initialStyleForCatalog("Netflix Originals")
+        )
+        assertEquals(
+            DynamicHomeRowStyle.PORTRAIT,
+            DynamicHomeRowClassifier.initialStyleForCatalog("Christopher Nolan")
         )
     }
 
     @Test
-    fun specialInitialStyleIsPreserved() {
+    fun specialInitialStyleIsPreservedForNonCatalogRows() {
         val result = DynamicHomeRowClassifier.classify(
             listOf(
                 DynamicHomeRowInput(
@@ -197,7 +226,7 @@ class DynamicHomeRowClassifierTest {
         )
 
         assertEquals(
-            listOf(DynamicHomeRowStyle.HERO, DynamicHomeRowStyle.PORTRAIT),
+            listOf(DynamicHomeRowStyle.HERO, DynamicHomeRowStyle.FEATURED),
             result
         )
     }
