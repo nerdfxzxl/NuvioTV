@@ -146,6 +146,7 @@ internal fun ModernHomeRowsList(
     onFocusedHeroMediaNonceChange: (Int) -> Unit,
     onExpansionInteractionNonceChange: (Int) -> Unit,
     blockLeftOnFirstExpandedItem: Boolean = false,
+    dynamicRowStyles: Map<String, String> = emptyMap(),
     modifier: Modifier = Modifier
 ) {
     // Unwrap StableRef wrappers for internal use (not passed to child composables)
@@ -425,6 +426,7 @@ internal fun ModernHomeRowsList(
                 }
                 ModernRowSection(
                     row = row,
+                    dynamicRowStyle = dynamicRowStyles[row.key],
                     isActiveRow = isActiveRowLambda,
                     rowFocusRequester = rowFocusRequesters.getOrPut(row.key) { FocusRequester() },
                     rowTitleBottom = 14.dp, // rowTitleBottom
