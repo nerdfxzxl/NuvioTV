@@ -50,6 +50,26 @@ class DynamicHomeRowClassifierTest {
     }
 
     @Test
+    fun channelCatalogKeepsLandscapeAndConsumesFeaturedSlot() {
+        val result = DynamicHomeRowClassifier.classify(
+            listOf(
+                catalog("Live Channels").copy(initialStyle = DynamicHomeRowStyle.LANDSCAPE),
+                catalog("Movies"),
+                catalog("Series")
+            )
+        )
+
+        assertEquals(
+            listOf(
+                DynamicHomeRowStyle.LANDSCAPE,
+                DynamicHomeRowStyle.PORTRAIT,
+                DynamicHomeRowStyle.LANDSCAPE
+            ),
+            result
+        )
+    }
+
+    @Test
     fun continueWatchingAndUpcomingDoNotAdvanceAlternation() {
         val result = DynamicHomeRowClassifier.classify(
             listOf(
