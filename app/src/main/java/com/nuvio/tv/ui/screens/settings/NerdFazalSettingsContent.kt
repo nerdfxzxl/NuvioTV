@@ -26,7 +26,8 @@ import com.nuvio.tv.ui.theme.NuvioTheme
 
 @Composable
 internal fun NerdFazalSettingsContent(
-    viewModel: LayoutSettingsViewModel = hiltViewModel()
+    viewModel: LayoutSettingsViewModel = hiltViewModel(),
+    initialFocusRequester: FocusRequester? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var selectedCatalog by remember { mutableStateOf<CatalogInfo?>(null) }
@@ -74,7 +75,12 @@ internal fun NerdFazalSettingsContent(
                             title = catalog.name,
                             subtitle = catalog.addonName,
                             value = dynamicHomeStyleLabel(selectedStyle),
-                            onClick = { selectedCatalog = catalog }
+                            onClick = { selectedCatalog = catalog },
+                            modifier = if (catalog == uiState.availableCatalogs.firstOrNull()) {
+                                initialFocusRequester?.let { Modifier.focusRequester(it) } ?: Modifier
+                            } else {
+                                Modifier
+                            }
                         )
                     }
                 }
