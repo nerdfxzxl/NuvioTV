@@ -381,17 +381,26 @@ private fun ModernCatalogRowItem(
             landscapeCardHeight = landscapeCatalogCardHeight
         )
     }
-    val localConfiguration = LocalConfiguration.current
-    val dynamicFeaturedWidth = localConfiguration.screenWidthDp.dp * (640f / 1920f)
-    val dynamicFeaturedHeight = localConfiguration.screenHeightDp.dp * (360f / 1080f)
-    val dynamicFeaturedSquareWidth = localConfiguration.screenWidthDp.dp * (540f / 1920f)
-    val dynamicFeaturedSquareHeight = localConfiguration.screenHeightDp.dp * (405f / 1080f)
+    // Legacy Dynamic dimensions are defined against a 1920x1080 design canvas.
+    // Scale each axis independently so the original card proportions survive other TV sizes.
+    val dynamicPortraitWidth = LocalConfiguration.current.screenWidthDp.dp * (212f / 1920f)
+    val dynamicPortraitHeight = LocalConfiguration.current.screenHeightDp.dp * (322f / 1080f)
+    val dynamicLandscapeWidth = LocalConfiguration.current.screenWidthDp.dp * (384f / 1920f)
+    val dynamicLandscapeHeight = LocalConfiguration.current.screenHeightDp.dp * (216f / 1080f)
+    val dynamicFeaturedWidth = LocalConfiguration.current.screenWidthDp.dp * (640f / 1920f)
+    val dynamicFeaturedHeight = LocalConfiguration.current.screenHeightDp.dp * (360f / 1080f)
+    val dynamicFeaturedSquareWidth = LocalConfiguration.current.screenWidthDp.dp * (540f / 1920f)
+    val dynamicFeaturedSquareHeight = LocalConfiguration.current.screenHeightDp.dp * (405f / 1080f)
     val renderedCardWidth = when (dynamicRowStyle) {
+        "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitWidth
+        "LANDSCAPE" -> dynamicLandscapeWidth
         "FEATURED" -> dynamicFeaturedWidth
         "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareWidth
         else -> cardMetrics.width
     }
     val renderedCardHeight = when (dynamicRowStyle) {
+        "PORTRAIT", "TOP_10_NUMBERED" -> dynamicPortraitHeight
+        "LANDSCAPE" -> dynamicLandscapeHeight
         "FEATURED" -> dynamicFeaturedHeight
         "FEATURED_SQUARE", "LARGE_4_3" -> dynamicFeaturedSquareHeight
         else -> cardMetrics.height
@@ -514,6 +523,15 @@ internal fun ModernRowSection(
     @Suppress("NAME_SHADOWING") val loadMoreRequestedTotals = loadMoreRequestedTotals.value
     @Suppress("NAME_SHADOWING") val itemFocusRequesters = itemFocusRequesters.value
     val rowKey = row.key
+    val dynamicConfiguration = LocalConfiguration.current
+    val dynamicScreenWidth = dynamicConfiguration.screenWidthDp.dp
+    val dynamicScreenHeight = dynamicConfiguration.screenHeightDp.dp
+    val dynamicMode = dynamicRowStyle != null
+    val rowStartPadding = if (dynamicMode) {
+        dynamicScreenWidth * (64f / 1920f)
+    } else {
+        52.dp
+    }
     val rowUseLandscapePosters = when (dynamicRowStyle) {
         "PORTRAIT", "TOP_10_NUMBERED" -> false
         "LANDSCAPE", "FEATURED", "FEATURED_SQUARE", "LARGE_4_3" -> true
@@ -568,8 +586,8 @@ internal fun ModernRowSection(
         }
         val rowTitle = row.title
         val textColor = NuvioTheme.colors.TextPrimary
-        val textModifier = remember(rowTitleBottom) {
-            Modifier.padding(start = 52.dp, bottom = rowTitleBottom)
+        val textModifier = remember(rowTitleBottom, rowStartPadding) {
+            Modifier.padding(start = rowStartPadding, bottom = rowTitleBottom)
         }
         Text(
             text = rowTitle,
@@ -675,18 +693,12 @@ internal fun ModernRowSection(
         }
 
         val density = LocalDensity.current
-        val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
-        val rowStartPadding = if (dynamicRowStyle != null) {
-            screenWidthDp * (64f / 1920f)
-        } else {
-            52.dp
-        }
         val rowHorizontalGap = if (dynamicRowStyle == "FEATURED" || dynamicRowStyle == "FEATURED_SQUARE" ||
             dynamicRowStyle == "LARGE_4_3"
         ) {
-            screenWidthDp * (40f / 1920f)
-        } else if (dynamicRowStyle != null) {
-            screenWidthDp * (24f / 1920f)
+            dynamicScreenWidth * (40f / 1920f)
+        } else if (dynamicMode) {
+            dynamicScreenWidth * (24f / 1920f)
         } else {
             NuvioTheme.spacing.md
         }
@@ -1058,7 +1070,8 @@ internal fun ModernRowSection(
                             if (dynamicRowStyle == "TOP_10_NUMBERED") {
                                 val configuration = LocalConfiguration.current
                                 val numberWidth = configuration.screenWidthDp.dp * (138f / 1920f)
-                                val numberFontSize = (configuration.screenHeightDp * 0.17f).sp
+                                val numberFontSize = (configuration.screenHeightDp * (260f / 1080f)).sp
+                                val numberBottomGap = configuration.screenHeightDp.dp * (14f / 1080f)
                                 Box(
                                     modifier = Modifier
                                         .width(numberWidth)
@@ -1067,7 +1080,7 @@ internal fun ModernRowSection(
                                 ) {
                                     Text(
                                         text = (index + 1).toString(),
-                                        modifier = Modifier.padding(bottom = portraitCatalogCardHeight * 0.10f),
+                                        modifier = Modifier.padding(bottom = numberBottomGap),
                                         color = Color.White.copy(alpha = 0.86f),
                                         fontSize = if (index >= 9) numberFontSize * 0.78f else numberFontSize,
                                         fontWeight = FontWeight.Black,
