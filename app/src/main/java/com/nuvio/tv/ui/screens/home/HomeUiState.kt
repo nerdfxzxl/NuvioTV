@@ -26,6 +26,7 @@ data class HomeUiState(
     val selectedItemId: String? = null,
     val installedAddonsCount: Int = 0,
     val homeLayout: HomeLayout = HomeLayout.MODERN,
+    val dynamicHomeRowStyles: Map<String, String> = emptyMap(),
     val modernLandscapePostersEnabled: Boolean = false,
     val alwaysShowLandscapeClearlogo: Boolean = false,
     val heroDescriptionAutoScrollEnabled: Boolean = false,
